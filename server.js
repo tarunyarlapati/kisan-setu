@@ -1762,6 +1762,15 @@ app.get("/api/bookings/:id/qr", requireAuth, async (req, res) => {
 // ─── PAGE ROUTES ───
 
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
+
+app.get("/healthz", async (req, res) => {
+  try {
+    await get("SELECT 1");
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(503).json({ ok: false });
+  }
+});
 app.get("/register", async (req, res) => {
   if (req.session && req.session.userId) return res.redirect(req.session.role === "farmer" ? "/booking" : "/dashboard");
   res.sendFile(path.join(__dirname, "public", "register.html"));
