@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Officer Dashboard — Kisan Setu</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav id="appNav" class="navbar" aria-label="Main navigation"></nav>
+
+  <main>
+    <div class="container" style="padding: 30px 18px 0;">
+      <div class="dash-header-box mb-3">
+        <div class="flex-between">
+          <div>
+            <h1 class="page-title" data-i18n="dash.title">Procurement Operations Dashboard</h1>
+            <p class="muted" id="dashGreeting" data-i18n="dash.greeting">Welcome — managing today's procurement.</p>
+          </div>
+          <div class="flex gap-2" style="flex-wrap: wrap;">
+            <button class="btn btn-outline" id="btnScanQr" data-i18n="dash.verifyLot" title="Scan a lot QR code">📷 Verify Lot</button>
+            <button class="btn btn-outline" id="btnTestSms" data-i18n="dash.testSms">📨 Test SMS</button>
+            <div class="dropdown-wrap" style="position:relative;">
+              <button class="btn btn-primary" id="btnExport" data-i18n="dash.export">⬇ Export</button>
+              <div class="export-menu notif-panel" id="exportMenu">
+                <div class="notif-head"><strong data-i18n="dash.exportMis">Export MIS reports</strong></div>
+                <div class="mt-1" style="padding:8px 12px;">
+                  <div class="small muted mb-1" style="font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Bookings</div>
+                  <a class="btn btn-sm btn-ghost btn-block" href="/api/export/bookings.csv"> bookings.csv</a>
+                  <a class="btn btn-sm btn-ghost btn-block" href="/api/export/bookings.pdf"> bookings.pdf</a>
+                  <div class="small muted mb-1 mt-2" style="font-weight:700;text-transform:uppercase;">Payments</div>
+                  <a class="btn btn-sm btn-ghost btn-block" href="/api/export/payments.csv"> payments.csv</a>
+                  <a class="btn btn-sm btn-ghost btn-block" href="/api/export/payments.pdf"> payments.pdf</a>
+                  <div class="small muted mb-1 mt-2" style="font-weight:700;text-transform:uppercase;">Shipments</div>
+                  <a class="btn btn-sm btn-ghost btn-block" href="/api/export/shipments.csv"> shipments.csv</a>
+                  <a class="btn btn-sm btn-ghost btn-block" href="/api/export/shipments.pdf"> shipments.pdf</a>
+                  <div class="small muted mb-1 mt-2" style="font-weight:700;text-transform:uppercase;">Farmers</div>
+                  <a class="btn btn-sm btn-ghost btn-block" href="/api/export/farmers.csv"> farmers.csv</a>
+                  <a class="btn btn-sm btn-ghost btn-block" href="/api/export/farmers.pdf"> farmers.pdf</a>
+                  <div class="small muted mb-1 mt-2" style="font-weight:700;text-transform:uppercase;">Grievances</div>
+                  <a class="btn btn-sm btn-ghost btn-block" href="/api/export/grievances.csv"> grievances.csv</a>
+                  <a class="btn btn-sm btn-ghost btn-block" href="/api/export/grievances.pdf"> grievances.pdf</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="globalErr" class="alert alert-error mb-3" style="display:none;"></div>
+
+      <!-- Tabs -->
+      <div class="dash-tabs-box mb-3">
+        <div class="tabs" id="dashTabs" role="tablist">
+          <button class="tab active" data-tab="overview" data-i18n="dash.tabOverview">Overview</button>
+          <button class="tab" data-tab="bookings" data-i18n="dash.tabBookings">Bookings</button>
+          <button class="tab" data-tab="queue" data-i18n="dash.tabQueue">Queue</button>
+          <button class="tab" data-tab="shipments" data-i18n="dash.tabShipments">Shipments</button>
+          <button class="tab" data-tab="farmers" data-i18n="dash.tabFarmers">Farmers</button>
+          <button class="tab" data-tab="analytics" data-i18n="dash.tabAnalytics">Analytics</button>
+          <button class="tab" data-tab="audit" data-i18n="dash.tabAudit">Audit Log</button>
+          <button class="tab" data-tab="grievances" data-i18n="dash.tabGrievances">Grievances</button>
+          <button class="tab" data-tab="commodityDates">Commodity Dates</button>
+          <button class="tab" data-tab="prices">Prices</button>
+        </div>
+      </div>
+
+      <!-- ============ OVERVIEW ============ -->
+      <section class="tab-panel active" data-panel="overview">
+        <div id="overviewContent"></div>
+      </section>
+
+      <!-- ============ BOOKINGS ============ -->
+      <section class="tab-panel" data-panel="bookings">
+        <div class="toolbar">
+          <div class="form-group">
+            <label for="fCentre" data-i18n="common.centre">Centre</label>
+            <select class="select" id="fCentre"><option value="">All centres</option></select>
+          </div>
+          <div class="form-group">
+            <label for="fDate" data-i18n="common.date">Date</label>
+            <input class="input" type="date" id="fDate">
+          </div>
+          <div class="form-group">
+            <label for="fStatus" data-i18n="common.status">Status</label>
+            <select class="select" id="fStatus">
+              <option value="">All statuses</option>
+              <option>booked</option><option>in-queue</option><option>weighing</option>
+              <option>qc</option><option>approved</option><option>rejected</option><option>cancelled</option><option>paid</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:0 1 220px;">
+            <label for="fSearch" data-i18n="common.search">Search</label>
+            <input class="input" type="text" id="fSearch" placeholder="Farmer / ref / commodity">
+          </div>
+          <div class="toolbar-btn">
+            <button class="btn btn-outline" id="btnApplyFilters" data-i18n="common.filter">Apply filters</button>
+          </div>
+          <div class="toolbar-btn">
+            <button class="btn btn-primary" id="btnRefreshBookings" data-i18n="common.retry">↻ Refresh</button>
+          </div>
+        </div>
+        <div id="bookingsContent"></div>
+      </section>
+
+      <!-- ============ QUEUE ============ -->
+      <section class="tab-panel" data-panel="queue">
+        <div class="toolbar">
+          <div class="form-group">
+            <label for="qCentre" data-i18n="common.centre">Centre</label>
+            <select class="select" id="qCentre"><option value="">Select centre…</option></select>
+          </div>
+          <div class="form-group">
+            <label for="qDate" data-i18n="common.date">Date</label>
+            <input class="input" type="date" id="qDate">
+          </div>
+          <div class="toolbar-btn">
+            <button class="btn btn-primary" id="btnLoadQueue" data-i18n="dash.tabQueue">Load queue</button>
+          </div>
+        </div>
+        <div id="queueContent"></div>
+      </section>
+
+      <!-- ============ SHIPMENTS ============ -->
+      <section class="tab-panel" data-panel="shipments">
+        <div class="flex-between mb-2">
+          <h3 data-i18n="dash.shipSub">All shipments — advance produce to the next tracking stage</h3>
+          <button class="btn btn-outline" id="btnRefreshShipments" data-i18n="common.retry">↻ Refresh</button>
+        </div>
+        <div id="shipmentsContent"></div>
+      </section>
+
+      <!-- ============ FARMERS ============ -->
+      <section class="tab-panel" data-panel="farmers">
+        <div class="toolbar">
+          <div class="form-group" style="flex:1 1 320px;">
+            <label for="fFarmerSearch" data-i18n="common.search">Search farmers</label>
+            <input class="input" type="text" id="fFarmerSearch" placeholder="Name / phone / email / district">
+          </div>
+          <div class="toolbar-btn">
+            <button class="btn btn-primary" id="btnRefreshFarmers" data-i18n="common.retry">↻ Refresh</button>
+          </div>
+        </div>
+        <div id="farmersContent"></div>
+      </section>
+
+      <!-- ============ ANALYTICS ============ -->
+      <section class="tab-panel" data-panel="analytics">
+        <div id="analyticsContent"></div>
+      </section>
+
+      <!-- ============ AUDIT ============ -->
+      <section class="tab-panel" data-panel="audit">
+        <div class="toolbar">
+          <div class="form-group">
+            <label for="fAuditAction" data-i18n="common.actions">Action</label>
+            <select class="select" id="fAuditAction">
+              <option value="">All actions</option>
+            </select>
+          </div>
+          <div class="toolbar-btn">
+            <button class="btn btn-primary" id="btnLoadAudit" data-i18n="dash.tabAudit">Load audit log</button>
+          </div>
+        </div>
+        <div id="auditContent"></div>
+      </section>
+
+      <!-- ============ GRIEVANCES ============ -->
+      <section class="tab-panel" data-panel="grievances">
+        <div class="toolbar">
+          <div class="form-group">
+            <label for="fGStatus" data-i18n="common.status">Status</label>
+            <select class="select" id="fGStatus">
+              <option value="">All statuses</option>
+              <option>open</option><option>in-progress</option><option>resolved</option><option>closed</option>
+            </select>
+          </div>
+          <div class="toolbar-btn">
+            <button class="btn btn-primary" id="btnLoadGrievances" data-i18n="dash.tabGrievances">Load grievances</button>
+          </div>
+        </div>
+        <div id="grievancesContent"></div>
+      </section>
+
+      <!-- ============ COMMODITY DATES ============ -->
+      <section class="tab-panel" data-panel="commodityDates">
+        <div class="card card-pad mb-3">
+          <h3 class="mb-2">Manage Commodity Procurement Dates</h3>
+          <p class="small muted mb-3">Set which dates each commodity is available for procurement. Farmers can only book on these dates.</p>
+          <div class="flex-between mb-3" style="flex-wrap:wrap;gap:12px;">
+            <div class="form-group" style="min-width:240px;">
+              <label for="cdCommodity">Select commodity</label>
+              <select class="select" id="cdCommodity">
+                <option value="">Loading commodities…</option>
+              </select>
+            </div>
+            <div class="flex gap-2" style="align-items:flex-end;">
+              <button type="button" class="btn btn-ghost btn-sm" id="cdPrevMonth">← Prev</button>
+              <strong id="cdMonthLabel" style="min-width:160px;text-align:center;">-</strong>
+              <button type="button" class="btn btn-ghost btn-sm" id="cdNextMonth">Next →</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-pad mb-3">
+          <h4 class="mb-2">Click dates to toggle availability</h4>
+          <p class="small muted mb-3">Green = available for procurement. Click to add/remove.</p>
+          <div id="cdDateGrid" class="slot-grid" style="grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));"></div>
+          <div id="cdLoading" style="padding: 30px 0;" class="text-center muted">Select a commodity to manage dates.</div>
+          <div id="cdEmpty" style="display:none;" class="empty-state">
+            <div class="e-icon">📅</div>
+            <h3>No dates set</h3>
+            <p>Click dates above to mark them as available for procurement.</p>
+          </div>
+        </div>
+
+        <div class="card card-pad">
+          <h4 class="mb-2">Currently available dates</h4>
+          <div id="cdDatesList"></div>
+        </div>
+      </section>
+
+      <!-- ============ PRICES ============ -->
+      <section class="tab-panel" data-panel="prices">
+        <div class="card card-pad mb-3">
+          <h3 class="mb-2">Update Commodity Prices</h3>
+          <p class="small muted mb-3">Update MSP (government) and mandi (local market) prices based on latest government circulars.</p>
+          <div class="form-grid mb-3">
+            <div class="form-group">
+              <label for="priceCommodity">Select commodity</label>
+              <select class="select" id="priceCommodity"><option value="">Loading…</option></select>
+            </div>
+            <div class="form-group">
+              <label for="priceMsp">New MSP (₹/quintal)</label>
+              <input class="input" type="number" id="priceMsp" min="1" placeholder="Government MSP">
+            </div>
+          </div>
+          <div class="flex-between">
+            <span></span>
+            <button class="btn btn-primary" id="btnUpdateMsp">Update MSP</button>
+          </div>
+        </div>
+        <div class="card card-pad">
+          <h3 class="mb-2">Current Prices</h3>
+          <p class="small muted mb-3">MSP and mandi prices per commodity per district.</p>
+          <div id="pricesContent"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- KYC Review Modal -->
+  <div class="modal-overlay" id="kycModalOverlay">
+    <div class="modal" style="max-width:640px;">
+      <div class="modal-head">
+        <h3>KYC Review — <span id="kycModalName">-</span></h3>
+        <button class="modal-close" onclick="closeKycModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="kycModalId">
+        <div id="kycModalLoading" class="text-center" style="padding:30px;">
+          <div class="spinner"></div>
+          <p class="mt-2 muted">Loading document…</p>
+        </div>
+        <div id="kycModalDocWrap" style="display:none;">
+          <div class="flex-between mb-2">
+            <span class="badge badge-booked">Document: <strong id="kycModalDocType">-</strong></span>
+          </div>
+          <div style="text-align:center; background:#f8fafc; border:1px solid var(--border); border-radius:var(--radius); padding:16px;">
+            <img id="kycModalDoc" style="max-width:100%; max-height:400px; border-radius:8px;" alt="KYC Document">
+          </div>
+          <div class="form-group mt-3">
+            <label for="kycModalNotes">Officer notes (optional, shown to farmer)</label>
+            <textarea class="textarea" id="kycModalNotes" rows="2" placeholder="Reason for rejection or approval notes…"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" onclick="closeKycModal()">Cancel</button>
+        <button class="btn btn-danger" onclick="kycAction('rejected')">Reject</button>
+        <button class="btn btn-primary" onclick="kycAction('verified')">Approve KYC</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/i18n.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/chatbot.js" defer></script>
+  <script>
+    window.initApp({ active: "dashboard", requireRole: "officer", loginRedirect: "/login", officerOnly: true })
+      .then(function () {
+        initDashboard();
+      });
+
+    const dash = {
+      centres: [],
+      bookings: [],
+      stats: null,
+      analytics: null,
+      farmers: [],
+      shipments: [],
+      audit: [],
+      grievances: [],
+      bookingsPromiseIdx: 0,
+    };
+
+    function initDashboard() {
+      if (window.APP.me && window.APP.me.name) {
+        document.getElementById("dashGreeting").textContent = "Welcome, " + window.APP.me.name + " — managing today's procurement.";
+      }
+      setupTabs();
+      applyLangDropdowns();
+
+      // Load centres for dropdowns
+      window.api("/api/centres").then(function (list) {
+        dash.centres = list || [];
+        const opts = function (selId) {
+          const sel = document.getElementById(selId);
+          if (!sel) return;
+          const cur = sel.value;
+          sel.innerHTML = '<option value="">' + (selId === "qCentre" ? "Select centre…" : "All centres") + "</option>" +
+            list.map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.name) + " (" + esc(c.district) + ")</option>"; }).join("");
+          sel.value = cur;
+        };
+        opts("fCentre"); opts("qCentre");
+      }).catch(function () {});
+
+      // Set today's date in filters
+      const today = todayIso();
+      const fd = document.getElementById("fDate");
+      fd.value = today;
+      const qd = document.getElementById("qDate");
+      qd.value = today;
+
+      loadStats();
+      loadBookings();
+
+      document.getElementById("btnApplyFilters").addEventListener("click", loadBookings);
+      document.getElementById("btnRefreshBookings").addEventListener("click", loadBookings);
+      document.getElementById("btnLoadQueue").addEventListener("click", loadQueue);
+      document.getElementById("btnRefreshShipments").addEventListener("click", loadShipments);
+      document.getElementById("btnRefreshFarmers").addEventListener("click", loadFarmers);
+      document.getElementById("btnLoadAudit").addEventListener("click", loadAudit);
+      document.getElementById("btnLoadGrievances").addEventListener("click", loadGrievances);
+
+      document.getElementById("fFarmerSearch").addEventListener("input", function () {
+        const q = this.value.toLowerCase();
+        renderFarmers(dash.farmers.filter(function (f) {
+          return (f.name || "").toLowerCase().includes(q) || (f.phone || "").includes(q) ||
+            (f.email || "").toLowerCase().includes(q) || (f.district || "").toLowerCase().includes(q);
+        }));
+      });
+
+      document.getElementById("fStatus").value = "";
+      document.getElementById("btnScanQr").addEventListener("click", openScanModal);
+      document.getElementById("btnTestSms").addEventListener("click", openSmsModal);
+      document.getElementById("btnExport").addEventListener("click", function (e) {
+        e.stopPropagation();
+        const menu = document.getElementById("exportMenu");
+        menu.classList.toggle("open");
+      });
+      document.addEventListener("click", function (e) {
+        const menu = document.getElementById("exportMenu");
+        if (menu && !e.target.closest(".dropdown-wrap")) menu.classList.remove("open");
+      });
+    }
+
+    function setupTabs() {
+      const tabs = document.getElementById("dashTabs");
+      tabs.addEventListener("click", function (e) {
+        const btn = e.target.closest(".tab");
+        if (!btn) return;
+        tabs.querySelectorAll(".tab").forEach(function (t) { t.classList.remove("active"); });
+        btn.classList.add("active");
+        const name = btn.getAttribute("data-tab");
+        document.querySelectorAll(".tab-panel").forEach(function (p) { p.classList.remove("active"); });
+        document.querySelector('.tab-panel[data-panel="' + name + '"]').classList.add("active");
+        // lazy load
+        if (name === "shipments" && !dash.shipments.length) loadShipments();
+        if (name === "farmers" && !dash.farmers.length) loadFarmers();
+        if (name === "analytics") loadAnalytics();
+        if (name === "audit") loadAudit();
+        if (name === "grievances") loadGrievances();
+        if (name === "commodityDates") loadCommodityDatesManager();
+        if (name === "prices") loadPricesManager();
+        if (name === "bookings") loadBookings();
+      });
+    }
+
+    /* ---------- Overview / stats ---------- */
+    function loadStats() {
+      const box = document.getElementById("overviewContent");
+      box.innerHTML = window.loadingSpinner();
+      window.api("/api/stats").then(function (s) {
+        dash.stats = s;
+        renderStats(s);
+      }).catch(function (e) {
+        box.innerHTML = '<div class="empty-state"><div class="e-icon">⚠️</div><h3>Could not load stats</h3>' +
+          '<button class="btn btn-outline mt-2" onclick="loadStats()">Retry</button></div>';
+        window.showError(e);
+      });
+    }
+
+    function renderStats(s) {
+      const box = document.getElementById("overviewContent");
+      const statuses = [
+        ["booked", "status.booked", s.statusCounts.booked],
+        ["in-queue", "status.inQueue", s.statusCounts["in-queue"]],
+        ["weighing", "status.weighing", s.statusCounts.weighing],
+        ["qc", "status.qc", s.statusCounts.qc],
+        ["approved", "status.approved", s.statusCounts.approved],
+        ["rejected", "status.rejected", s.statusCounts.rejected],
+      ].map(function (r) {
+        return '<div class="mini-cell"><div class="v">' + (r[2] || 0) + '</div><div class="k">' + esc(window.t(r[1])) + "</div></div>";
+      }).join("");
+
+      const centreRows = (s.centres || []).map(function (c) {
+        const load = Number(c.load) || 0;
+        const cls = load < 50 ? "" : load < 80 ? " warn" : " hot";
+        return "<tr>" +
+          "<td><strong>" + esc(c.name) + "</strong><br><span class='soft small'>" + esc(c.district) + "</span></td>" +
+          '<td class="num">' + (c.queueNow || 0) + "</td>" +
+          '<td class="num">' + (c.bookedToday || 0) + " / " + (c.capacityTotal || 0) + "</td>" +
+          '<td class="num"><strong>' + (c.freeToday != null ? c.freeToday : "-") + "</strong></td>" +
+          '<td style="min-width:120px;"><div class="load-wrap"><div class="load-fill' + cls + '" style="width:' + Math.min(100, load) + '%"></div></div><span class="small muted">' + load + '%</span></td>' +
+          "</tr>";
+      }).join("");
+
+      const trendRows = (s.trend || []).map(function (d) {
+        return "<tr><td>" + fmtDate(d.date) + "</td><td class='num'><strong>" + d.count + "</strong></td></tr>";
+      }).join("");
+
+      box.innerHTML =
+        '<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">' +
+        '<div class="stats-card"><span class="s-icon">👨‍🌾</span><span class="s-label">' + window.t("common.farmers") + '</span><span class="s-value">' + s.totalFarmers + "</span><span class='s-sub'>registered accounts</span></div>" +
+        '<div class="stats-card"><span class="s-icon">📅</span><span class="s-label">' + window.t("dash.todayBookings") + '</span><span class="s-value blue">' + s.todayBookings + "</span><span class='s-sub'>across all centres</span></div>" +
+        '<div class="stats-card"><span class="s-icon">🟡</span><span class="s-label">' + window.t("dash.inQueue") + '</span><span class="s-value orange">' + s.inQueueToday + "</span><span class='s-sub'>in-queue / weighing / QC</span></div>" +
+        '<div class="stats-card"><span class="s-icon">💸</span><span class="s-label">' + window.t("dash.releasedToday") + '</span><span class="s-value green">' + fmtMoney(s.todayRevenue) + "</span><span class='s-sub'>paid out</span></div>" +
+        '<div class="stats-card"><span class="s-icon">💰</span><span class="s-label">' + window.t("dash.totalDisbursed") + '</span><span class="s-value green">' + fmtMoney(s.totalApprovedAmount) + "</span><span class='s-sub'>all-time paid</span></div>" +
+        '<div class="stats-card"><span class="s-icon">⏳</span><span class="s-label">' + window.t("dash.pendingPayout") + '</span><span class="s-value orange">' + fmtMoney(s.pendingAmount) + "</span><span class='s-sub'>approved, not yet paid</span></div>" +
+        '<div class="stats-card"><span class="s-icon">🚚</span><span class="s-label">' + window.t("dash.shipmentsActive") + '</span><span class="s-value blue">' + s.shipmentsActive + "</span><span class='s-sub'>in transit to FCI</span></div>" +
+        '<div class="stats-card"><span class="s-icon">🏁</span><span class="s-label">' + window.t("dash.delivered") + '</span><span class="s-value green">' + s.shipmentsDelivered + "</span><span class='s-sub'>at FCI depot</span></div>" +
+        "</div>" +
+        '<div class="grid mt-4" style="grid-template-columns:1.6fr 1fr;">' +
+        '<div class="card"><div class="card-header"><h3>Today\'s status mix</h3></div><div class="card-body"><div class="mini-grid">' + statuses + "</div></div></div>" +
+        '<div class="card"><div class="card-header"><h3>Bookings — last 7 days</h3></div><div class="card-body">' +
+        '<div class="table-wrap"><table class="table" style="min-width:0;"><thead><tr><th>Date</th><th>Bookings</th></tr></thead><tbody>' +
+        (trendRows || '<tr><td colspan="2" class="muted">No data</td></tr>') +
+        "</tbody></table></div></div></div>" +
+        "</div>" +
+        '<div class="card mt-4"><div class="card-header"><h3>Centre load — today</h3></div><div class="card-body">' +
+        '<div class="table-wrap"><table class="table"><thead><tr><th>Centre</th><th>Queue now</th><th>Booked / capacity</th><th>Free</th><th>Load</th></tr></thead><tbody>' +
+        (centreRows || '<tr><td colspan="5" class="muted">No centres</td></tr>') +
+        "</tbody></table></div></div></div>";
+    }
+
+    /* ---------- Bookings ---------- */
+    function bookingQuery() {
+      const params = new URLSearchParams();
+      const c = document.getElementById("fCentre").value;
+      const d = document.getElementById("fDate").value;
+      const st = document.getElementById("fStatus").value;
+      if (c) params.set("centreId", c);
+      if (d) params.set("date", d);
+      if (st) params.set("status", st);
+      return params.toString();
+    }
+
+    function loadBookings() {
+      const box = document.getElementById("bookingsContent");
+      const q = bookingQuery();
+      box.innerHTML = window.loadingSpinner();
+      window.api("/api/bookings" + (q ? "?" + q : ""))
+        .then(function (list) {
+          dash.bookings = list || [];
+          const term = (document.getElementById("fSearch").value || "").toLowerCase().trim();
+          const filtered = term ? dash.bookings.filter(function (b) {
+            return (b.farmerName || "").toLowerCase().includes(term) || (b.id || "").toLowerCase().includes(term) ||
+              (b.commodityName || "").toLowerCase().includes(term);
+          }) : dash.bookings;
+          renderBookings(filtered);
+        })
+        .catch(function (e) {
+          box.innerHTML = '<div class="empty-state"><div class="e-icon">⚠️</div><h3>Could not load bookings</h3>' +
+            '<button class="btn btn-outline mt-2" onclick="loadBookings()">Retry</button></div>';
+          window.showError(e);
+        });
+    }
+
+    function renderBookings(list) {
+      const box = document.getElementById("bookingsContent");
+      if (!list.length) {
+        box.innerHTML = '<div class="empty-state"><div class="e-icon">📂</div><h3>No bookings match the filters</h3><p>Try adjusting centre, date or status.</p></div>';
+        return;
+      }
+      box.innerHTML =
+        '<div class="table-wrap"><table class="table"><thead><tr>' +
+        "<th>" + window.t("dash.booking") + "</th><th>" + window.t("dash.farmer") + "</th><th>" + window.t("common.commodity") + "</th><th>" + window.t("dash.centre") + "</th><th>" + window.t("dash.dateSlot") + "</th><th>" + window.t("dash.qty") + "</th><th>" + window.t("common.amount") + "</th><th>" + window.t("common.status") + "</th><th>" + window.t("dash.payout") + "</th><th>" + window.t("common.actions") + "</th>" +
+        "</tr></thead><tbody>" +
+        list.map(function (b) {
+          const pay = b.farmerPaymentMethod === "upi"
+            ? "UPI · " + esc(b.farmerUpiId || "-")
+            : "Bank · " + esc(b.farmerBankName || "-") + " " + esc(b.farmerAccountNumber ? "…" + b.farmerAccountNumber.slice(-4) : "");
+          const checkin = b.status === "booked"
+            ? '<button class="btn btn-sm btn-primary" data-checkin="' + esc(b.id) + '">Check-in</button>' : "";
+          const statusBtn = ['booked', "in-queue", "weighing", "qc", "approved", "rejected", "cancelled"].includes(b.status)
+            ? '<button class="btn btn-sm btn-outline" data-status="' + esc(b.id) + '" data-cur="' + esc(b.status) + '">Status</button>' : "";
+          const payBtn = b.status === "approved"
+            ? '<button class="btn btn-sm btn-orange" data-pay="' + esc(b.id) + '">Pay</button>' : "";
+          const remind = b.today
+            ? '<button class="btn btn-sm btn-ghost" data-remind="' + esc(b.id) + '" title="Send slot reminder">🔔</button>' : "";
+          return "<tr>" +
+            '<td class="mono">' + esc(b.id) + "</td>" +
+            "<td><strong>" + esc(b.farmerName) + "</strong></td>" +
+            "<td>" + esc(b.commodityName) + " · Grade " + esc(b.grade || "-") + "</td>" +
+            "<td>" + esc(b.centreName) + "</td>" +
+            "<td>" + fmtDate(b.date) + " · " + esc(b.timeSlot) + "</td>" +
+            '<td class="num">' + Number(b.quantity) + " qu</td>" +
+            '<td class="num"><strong>' + fmtMoney(b.estAmount) + "</strong></td>" +
+            "<td>" + window.statusBadge(b.status) +
+            (b.queueIndex != null ? '<br><span class="small muted">queue #' + b.queueIndex + "</span>" : "") + "</td>" +
+            '<td class="small">' + pay + "</td>" +
+            '<td><div class="table-actions">' + checkin + statusBtn + payBtn + remind + "</div></td>" +
+            "</tr>";
+        }).join("") +
+        "</tbody></table></div>" +
+        '<p class="small muted mt-2">Showing ' + list.length + " bookings.</p>";
+    }
+
+    document.addEventListener("click", function (e) {
+      const checkinBtn = e.target.closest("[data-checkin]");
+      if (checkinBtn) return doCheckin(checkinBtn.getAttribute("data-checkin"), checkinBtn);
+      const statusBtn = e.target.closest("[data-status]");
+      if (statusBtn) return openStatusModal(statusBtn);
+      const payBtn = e.target.closest("[data-pay]");
+      if (payBtn) return openPayModal(payBtn.getAttribute("data-pay"));
+      const remindBtn = e.target.closest("[data-remind]");
+      if (remindBtn) return doRemind(remindBtn.getAttribute("data-remind"), remindBtn);
+    });
+
+    function doCheckin(id, btn) {
+      window.confirmDialog("Check-in farmer?", "Mark this booking as checked-in and assign the next queue position?").then(function (ok) {
+        if (!ok) return;
+        if (btn) { btn.disabled = true; btn.textContent = "…"; }
+        window.api("/api/bookings/" + encodeURIComponent(id) + "/checkin", { method: "POST" })
+          .then(function () {
+            window.showToast("Checked-in. Queue position assigned.");
+            loadBookings(); if (dash.stats) loadStats();
+          })
+          .catch(function (err) {
+            window.showError(err);
+            if (btn) { btn.disabled = false; btn.textContent = "Check-in"; }
+          });
+      });
+    }
+
+    function openStatusModal(btn) {
+      const id = btn.getAttribute("data-status");
+      const cur = btn.getAttribute("data-cur");
+      const b = (dash.bookings || []).find(function (x) { return x.id === id; });
+      const farmerName = b ? b.farmerName : "this farmer";
+      const options = ["booked", "in-queue", "weighing", "qc", "approved", "rejected", "cancelled"];
+      const showCancelOpts = cur === "cancelled" || cur === "rejected";
+      window.openModal(
+        '<div class="modal-head"><h3>Update booking status</h3><button class="modal-close" data-close="1">&times;</button></div>' +
+        '<div class="modal-body">' +
+        '<div class="form-group mb-2"><label>Current status</label><div>' + window.statusBadge(cur) + "</div></div>" +
+        '<div class="form-group"><label for="mStatus">New status</label><select class="select" id="mStatus">' +
+        options.map(function (o) { return '<option value="' + o + '"' + (o === cur ? " selected" : "") + ">" + esc(o) + "</option>"; }).join("") +
+        "</select></div>" +
+        '<div id="mCancelOpts" class="' + (showCancelOpts ? "" : "hidden") + '">' +
+        '<div class="form-group mb-2"><label for="mFeedback">Feedback / reason for the farmer</label>' +
+        '<textarea class="textarea" id="mFeedback" rows="2" placeholder="e.g. Produce not matching declared quality, centre overbooked, invalid KYC…"></textarea></div>' +
+        '<label class="check-row"><input type="checkbox" id="mRemoveFarmer"><span>Also remove ' + esc(farmerName) + '&#39;s account permanently after this ' + esc(cur === "rejected" ? "rejection" : "cancellation") + ".</span></label>" +
+        '</div>' +
+        "</div>" +
+        '<div class="modal-foot"><button class="btn btn-ghost" data-close="1">Cancel</button>' +
+        '<button class="btn btn-primary" id="mStatusSave">Update</button></div>'
+      );
+      const optsWrap = document.getElementById("mCancelOpts");
+      const mStatus = document.getElementById("mStatus");
+      mStatus.addEventListener("change", function () {
+        optsWrap.classList.toggle("hidden", !(mStatus.value === "cancelled" || mStatus.value === "rejected"));
+      });
+      document.getElementById("mStatusSave").addEventListener("click", function () {
+        const status = mStatus.value;
+        const body = { status: status };
+        if (status === "cancelled" || status === "rejected") {
+          body.feedback = document.getElementById("mFeedback").value.trim() || "";
+          body.removeFarmer = document.getElementById("mRemoveFarmer").checked;
+        }
+        window.api("/api/bookings/" + encodeURIComponent(id) + "/status", { method: "PATCH", body: body })
+          .then(function (r) {
+            window.closeModal();
+            window.showToast(r && r.removed
+              ? ("Farmer removed with feedback: " + (body.feedback || "no reason given"))
+              : "Status updated to " + status);
+            loadBookings(); if (dash.stats) loadStats();
+            if (r && r.removed) loadFarmers();
+          })
+          .catch(function (err) { window.showError(err); });
+      });
+    }
+
+    function openPayModal(id) {
+      window.openModal(
+        '<div class="modal-head"><h3>Release payment</h3><button class="modal-close" data-close="1">&times;</button></div>' +
+        '<div class="modal-body">' +
+        '<div class="form-group mb-2"><label for="mRef">Transaction reference</label>' +
+        '<input class="input" id="mRef" placeholder="Optional — auto-generated if empty"></div>' +
+        '<div class="form-group"><label for="mMode">Payment mode</label>' +
+        '<select class="select" id="mMode"><option>UPI</option><option>Draft / Bank Transfer</option><option>RTGS</option><option>NEFT</option><option>Cash</option></select></div>' +
+        "</div>" +
+        '<div class="modal-foot"><button class="btn btn-ghost" data-close="1">Cancel</button>' +
+        '<button class="btn btn-orange" id="mPaySave">Mark as paid</button></div>'
+      );
+      document.getElementById("mPaySave").addEventListener("click", function () {
+        const btn = this; btn.disabled = true;
+        window.api("/api/bookings/" + encodeURIComponent(id) + "/pay", {
+          method: "POST",
+          body: { transactionRef: document.getElementById("mRef").value.trim() || "", paymentMode: document.getElementById("mMode").value },
+        })
+          .then(function () {
+            window.closeModal();
+            window.showToast("Payment recorded. Farmer notified.");
+            loadBookings(); if (dash.stats) loadStats();
+          })
+          .catch(function (err) { btn.disabled = false; window.showError(err); });
+      });
+    }
+
+    function doRemind(id, btn) {
+      if (btn) { btn.disabled = true; }
+      window.api("/api/bookings/" + encodeURIComponent(id) + "/remind", { method: "POST" })
+        .then(function () {
+          window.showToast("Slot reminder sent to farmer.");
+        })
+        .catch(function (err) {
+          window.showError(err);
+          if (btn) { btn.disabled = false; }
+        });
+    }
+
+    /* ---------- Queue ---------- */
+    function loadQueue() {
+      const box = document.getElementById("queueContent");
+      const centreId = document.getElementById("qCentre").value;
+      const date = document.getElementById("qDate").value || todayIso();
+      if (!centreId) {
+        box.innerHTML = '<div class="alert alert-info">' + window.t("dash.selectCentreFirst") + "</div>";
+        return;
+      }
+      box.innerHTML = window.loadingSpinner();
+      window.api("/api/queue?centreId=" + encodeURIComponent(centreId) + "&date=" + encodeURIComponent(date))
+        .then(function (res) {
+          if (!res.rows.length) {
+            box.innerHTML = '<div class="empty-state"><div class="e-icon">🟢</div><h3>' + window.t("dash.queueEmpty") + '</h3>' +
+              '<p>' + window.t("dash.noFarmersCheckedIn") + " — " + fmtDate(date) + ".</p></div>";
+            return;
+          }
+          box.innerHTML =
+            '<div class="flex-between mb-2"><h3>' + window.t("dash.liveQueue") + " — " + res.rows.length + " " + window.t("dash.farmersShort") + "</h3>" +
+            '<span class="chip">⏱ ' + res.avg + " " + window.t("dash.minPerFarmer") + "</span></div>" +
+            '<div class="queue-list">' +
+            res.rows.map(function (r) {
+              return '<div class="queue-item">' +
+                '<div class="q-pos">' + r.queuePosition + "</div>" +
+                '<div class="q-info"><div class="q-name">' + esc(r.farmerName) + "</div>" +
+                '<div class="q-meta">' + esc(r.commodityName) + " · " + Number(r.quantity) + " qu</div></div>" +
+                window.statusBadge(r.status) +
+                '<span class="small muted">~' + (r.estWaitMin || 0) + " min</span>" +
+                "</div>";
+            }).join("") +
+            "</div>";
+        })
+        .catch(function (e) {
+          box.innerHTML = '<div class="empty-state"><div class="e-icon">⚠️</div><h3>Could not load queue</h3></div>';
+          window.showError(e);
+        });
+    }
+
+    /* ---------- Shipments ---------- */
+    function loadShipments() {
+      const box = document.getElementById("shipmentsContent");
+      box.innerHTML = window.skeletonCards(3);
+      window.api("/api/shipments").then(function (list) {
+        dash.shipments = list || [];
+        renderShipments(dash.shipments);
+      }).catch(function (e) {
+        box.innerHTML = '<div class="empty-state"><div class="e-icon">⚠️</div><h3>Could not load shipments</h3></div>';
+        window.showError(e);
+      });
+    }
+
+    function renderShipments(list) {
+      const box = document.getElementById("shipmentsContent");
+      if (!list.length) {
+        box.innerHTML = '<div class="empty-state"><div class="e-icon">🚚</div><h3>No shipments recorded</h3></div>';
+        return;
+      }
+      box.innerHTML =
+        '<div class="table-wrap"><table class="table"><thead><tr>' +
+        "<th>" + window.t("dash.booking") + "</th><th>" + window.t("dash.farmer") + "</th><th>" + window.t("common.commodity") + "</th><th>" + window.t("dash.qty") + "</th><th>" + window.t("dash.centre") + "</th><th>" + window.t("common.date") + "</th><th>" + window.t("common.status") + "</th><th>" + window.t("common.actions") + "</th>" +
+        "</tr></thead><tbody>" +
+        list.map(function (s) {
+          const pct = s.totalStages ? Math.round((s.stage / s.totalStages) * 100) : 0;
+          const delivered = s.stage >= s.totalStages;
+          return "<tr>" +
+            '<td class="mono">' + esc(s.id) + "<br><span class='soft small'>" + esc(s.bookingId) + "</span></td>" +
+            "<td>" + esc(s.farmerName) + "</td>" +
+            "<td>" + esc(s.commodityName) + "</td>" +
+            '<td class="num">' + Number(s.quantity) + " qu</td>" +
+            "<td>" + esc(s.centreName) + "</td>" +
+            "<td>" + fmtDate(s.date) + "</td>" +
+            '<td style="min-width:150px;"><div class="flex-between small"><span>' + esc(s.stage) + " / " + esc(s.totalStages) + "</span><span>" + pct + "%</span></div>" +
+            '<div class="progress-track"><div class="progress-fill" style="width:' + Math.min(100, pct) + '%"></div></div></td>' +
+            '<td>' + (delivered ? '<span class="badge badge-paid">Delivered</span>'
+              : '<button class="btn btn-sm btn-outline" data-advance-ship="' + esc(s.bookingId) + '">Advance →</button>') + "</td>" +
+            "</tr>";
+        }).join("") +
+        "</tbody></table></div>";
+    }
+
+    document.addEventListener("click", function (e) {
+      const adv = e.target.closest("[data-advance-ship]");
+      if (!adv) return;
+      const id = adv.getAttribute("data-advance-ship");
+      adv.disabled = true;
+      window.api("/api/shipments/" + encodeURIComponent(id) + "/advance", { method: "POST" })
+        .then(function () {
+          window.showToast("Shipment advanced to the next stage.");
+          loadShipments();
+        })
+        .catch(function (err) {
+          adv.disabled = false;
+          window.showError(err);
+        });
+    });
+
+    /* ---------- Farmers ---------- */
+    function loadFarmers() {
+      const box = document.getElementById("farmersContent");
+      box.innerHTML = window.loadingSpinner();
+      window.api("/api/farmers").then(function (list) {
+        dash.farmers = list || [];
+        renderFarmers(dash.farmers);
+      }).catch(function (e) {
+        box.innerHTML = '<div class="empty-state"><div class="e-icon">⚠️</div><h3>Could not load farmers</h3></div>';
+        window.showError(e);
+      });
+    }
+
+    function kycBadge(k) {
+      return window.statusBadge(k === "verified" ? "verified" : k === "rejected" ? "rejected" : k === "pending" ? "pending" : k);
+    }
+
+    function renderFarmers(list) {
+      const box = document.getElementById("farmersContent");
+      if (!list.length) {
+        box.innerHTML = '<div class="empty-state"><div class="e-icon">👨‍🌾</div><h3>No farmers registered</h3></div>';
+        return;
+      }
+      box.innerHTML =
+        '<div class="table-wrap"><table class="table"><thead><tr>' +
+        "<th>" + window.t("dash.farmer") + "</th><th>" + window.t("common.email") + " / " + window.t("common.phone") + "</th><th>" + window.t("common.village") + " / " + window.t("common.district") + "</th><th>" + window.t("common.amount") + "</th><th>KYC</th><th>" + window.t("common.bookings") + "</th><th>" + window.t("common.amount") + "</th><th>" + window.t("common.actions") + "</th>" +
+        "</tr></thead><tbody>" +
+        list.map(function (f) {
+          var kycActions = "";
+          if (f.kyc === "pending") {
+            kycActions =
+              '<button class="btn btn-sm btn-primary" data-view-kyc="' + esc(f.id) + '" data-view-name="' + esc(f.name) + '">Review</button> ';
+          } else if (f.kyc === "verified" || f.kyc === "rejected") {
+            kycActions =
+              '<button class="btn btn-sm btn-ghost" data-view-kyc="' + esc(f.id) + '" data-view-name="' + esc(f.name) + '">View</button> ';
+          }
+          return "<tr>" +
+            "<td><strong>" + esc(f.name) + "</strong></td>" +
+            "<td class='small'>" + esc(f.phone) + "<br>" + esc(f.email) + "</td>" +
+            "<td class='small'>" + esc(f.village || "-") + " · " + esc(f.district || "-") + "</td>" +
+            "<td>" + (f.landSize ? f.landSize + " ac" : "-") + "</td>" +
+            "<td>" + kycBadge(f.kyc) + "</td>" +
+            '<td class="num">' + (f.bookingCount || 0) + "</td>" +
+            '<td class="num">' + fmtMoney(f.paidAmount || 0) + "</td>" +
+            '<td><div class="table-actions">' + kycActions +
+            '<button class="btn btn-sm btn-danger" data-del-farmer="' + esc(f.id) + '" data-del-name="' + esc(f.name) + '">Delete</button>' +
+            "</div></td>" +
+            "</tr>";
+        }).join("") +
+        "</tbody></table></div>";
+    }
+
+    /* KYC Review Modal */
+    function showKycModal(farmerId, farmerName) {
+      var overlay = document.getElementById("kycModalOverlay");
+      overlay.classList.add("open");
+      document.getElementById("kycModalName").textContent = farmerName;
+      document.getElementById("kycModalDoc").src = "";
+      document.getElementById("kycModalDocType").textContent = "Loading…";
+      document.getElementById("kycModalNotes").value = "";
+      document.getElementById("kycModalDocWrap").style.display = "none";
+      document.getElementById("kycModalLoading").style.display = "block";
+      document.getElementById("kycModalId").value = farmerId;
+
+      window.api("/api/kyc/" + encodeURIComponent(farmerId) + "/doc").then(function (data) {
+        document.getElementById("kycModalLoading").style.display = "none";
+        document.getElementById("kycModalDocWrap").style.display = "block";
+        document.getElementById("kycModalDoc").src = data.docData;
+        var labels = { aadhaar: "Aadhaar Card", pan: "PAN Card", voterId: "Voter ID", drivingLicence: "Driving Licence", passport: "Passport" };
+        document.getElementById("kycModalDocType").textContent = labels[data.docType] || data.docType;
+      }).catch(function (e) {
+        document.getElementById("kycModalLoading").style.display = "none";
+        document.getElementById("kycModalDocType").textContent = "No document submitted";
+        showToast(e.message, "error");
+      });
+    }
+
+    function closeKycModal() {
+      document.getElementById("kycModalOverlay").classList.remove("open");
+    }
+
+    function kycAction(status) {
+      var id = document.getElementById("kycModalId").value;
+      var notes = document.getElementById("kycModalNotes").value;
+      window.api("/api/farmers/" + encodeURIComponent(id) + "/kyc", { method: "POST", body: { kyc: status, notes: notes } })
+        .then(function () {
+          closeKycModal();
+          window.showToast("KYC marked " + status);
+          loadFarmers();
+        })
+        .catch(function (err) { window.showError(err); });
+    }
+
+    document.addEventListener("click", function (e) {
+      const viewBtn = e.target.closest("[data-view-kyc]");
+      if (viewBtn) {
+        showKycModal(viewBtn.getAttribute("data-view-kyc"), viewBtn.getAttribute("data-view-name"));
+        return;
+      }
+      const delBtn = e.target.closest("[data-del-farmer]");
+      if (delBtn) return deleteFarmer(delBtn);
+    });
+
+    function deleteFarmer(btn) {
+      const id = btn.getAttribute("data-del-farmer");
+      const name = btn.getAttribute("data-del-name");
+      window.confirmDialog("Delete farmer account?", "This permanently deletes " + name + "'s account, bookings, payments and all related data. This cannot be undone.", "Delete forever", "btn-danger")
+        .then(function (ok) {
+          if (!ok) return;
+          window.api("/api/farmers/" + encodeURIComponent(id), { method: "DELETE" })
+            .then(function () {
+              window.showToast("Farmer deleted: " + name);
+              loadFarmers();
+            })
+            .catch(function (err) { window.showError(err); });
+        });
+    }
+
+    /* ---------- Analytics ---------- */
+    function loadAnalytics() {
+      const box = document.getElementById("analyticsContent");
+      box.innerHTML = window.loadingSpinner();
+      window.api("/api/analytics").then(function (a) {
+        dash.analytics = a;
+        renderAnalytics(a);
+      }).catch(function (e) {
+        box.innerHTML = '<div class="empty-state"><div class="e-icon">⚠️</div><h3>Could not load analytics</h3></div>';
+        window.showError(e);
+      });
+    }
+
+    function renderAnalytics(a) {
+      const box = document.getElementById("analyticsContent");
+
+      const tonnageRows = (a.tonnage || []).map(function (d) {
+        return "<tr><td>" + fmtDate(d.date) + '</td><td class="num">' + Number(d.qty) + " qu</td></tr>";
+      }).join("");
+      const revenueRows = (a.revenue || []).map(function (d) {
+        return "<tr><td>" + fmtDate(d.date) + '</td><td class="num">' + fmtMoney(d.amount) + "</td></tr>";
+      }).join("");
+
+      const scKeys = ["booked", "in-queue", "weighing", "qc", "approved", "rejected", "paid", "cancelled"];
+      const statusCells = scKeys.map(function (k) {
+        return '<div class="mini-cell"><div class="v">' + (a.statusCounts[k] || 0) + '</div><div class="k">' +
+          esc(window.t(STATUS_MAP[k] || "status." + k)) + "</div></div>";
+      }).join("");
+
+      const comRows = (a.commoditySplit || []).map(function (c) {
+        return "<tr>" +
+          "<td><strong>" + esc(c.commodityName) + "</strong></td>" +
+          '<td class="num">' + (c.bookings || 0) + "</td>" +
+          '<td class="num">' + Number(c.qty || 0) + " qu</td>" +
+          '<td class="num">' + fmtMoney(c.paid) + "</td></tr>";
+      }).join("");
+
+      const centreRows = (a.centres || []).map(function (c) {
+        return "<tr><td><strong>" + esc(c.name) + "</strong></td><td>" + esc(c.district) + "</td>" +
+          '<td class="num">' + (c.queueNow || 0) + "</td><td class='num'>" + (c.bookedToday || 0) + " / " + (c.capacityTotal || 0) + "</td>" +
+          '<td class="num">' + (c.load || 0) + "%</td><td class='num'>" + esc(c.rating) + "</td></tr>";
+      }).join("");
+
+      const fcRows = (a.forecast || []).map(function (f) {
+        const cells = (f.centres || []).map(function (c) {
+          return '<span class="chip" title="' + esc(c.name) + '">' + esc(c.name.split(" ")[0]) + " " + c.load + '%</span>';
+        }).join(" ");
+        return "<tr><td>" + fmtDate(f.date) + "</td><td>" + cells + "</td></tr>";
+      }).join("");
+
+      const ratingRows = (a.ratings || []).slice(0, 20).map(function (r) {
+        return "<tr><td>" + esc(r.centreName || "-") + "</td><td>" + "★".repeat(r.rating) + " " + esc(r.rating) + "</td>" +
+          "<td class='small'>" + esc(r.comment || "-") + "</td><td class='small'>" + fmtDate((r.createdAt || "").slice(0, 10)) + "</td></tr>";
+      }).join("");
+
+      box.innerHTML =
+        '<h3 class="mb-2">CSR / MIS analytics</h3>' +
+        '<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">' + statusCells + "</div>" +
+        '<div class="grid mt-4" style="grid-template-columns:1fr 1fr;">' +
+        '<div class="card"><div class="card-header"><h3>Daily tonnage (14 days)</h3></div><div class="card-body">' +
+        '<div class="table-wrap"><table class="table" style="min-width:0;"><thead><tr><th>Date</th><th>Quantity</th></tr></thead><tbody>' +
+        (tonnageRows || '<tr><td colspan="2" class="muted">No data</td></tr>') + "</tbody></table></div></div></div>" +
+        '<div class="card"><div class="card-header"><h3>Daily revenue (14 days)</h3></div><div class="card-body">' +
+        '<div class="table-wrap"><table class="table" style="min-width:0;"><thead><tr><th>Date</th><th>Amount</th></tr></thead><tbody>' +
+        (revenueRows || '<tr><td colspan="2" class="muted">No data</td></tr>') + "</tbody></table></div></div></div>" +
+        "</div>" +
+        '<div class="card mt-4"><div class="card-header"><h3>Commodity performance</h3></div><div class="card-body">' +
+        '<div class="table-wrap"><table class="table"><thead><tr><th>Commodity</th><th>Bookings</th><th>Quantity</th><th>Paid</th></tr></thead><tbody>' +
+        (comRows || '<tr><td colspan="4" class="muted">No data</td></tr>') + "</tbody></table></div></div></div>" +
+        '<div class="grid mt-4" style="grid-template-columns:1.4fr 1fr;">' +
+        '<div class="card"><div class="card-header"><h3>Centre performance</h3></div><div class="card-body">' +
+        '<div class="table-wrap"><table class="table"><thead><tr><th>Centre</th><th>District</th><th>Queue</th><th>Booked/cap</th><th>Load</th><th>Rating</th></tr></thead><tbody>' +
+        (centreRows || '<tr><td colspan="6" class="muted">No data</td></tr>') + "</tbody></table></div></div></div>" +
+        '<div class="card"><div class="card-header"><h3>Capacity forecast (7 days)</h3></div><div class="card-body">' +
+        '<div class="table-wrap"><table class="table" style="min-width:0;"><thead><tr><th>Date</th><th>Centre load</th></tr></thead><tbody>' +
+        (fcRows || '<tr><td colspan="2" class="muted">No data</td></tr>') + "</tbody></table></div></div></div>" +
+        "</div>" +
+        '<div class="card mt-4"><div class="card-header"><h3>Recent centre ratings</h3></div><div class="card-body">' +
+        '<div class="table-wrap"><table class="table"><thead><tr><th>Centre</th><th>Rating</th><th>Comment</th><th>Date</th></tr></thead><tbody>' +
+        (ratingRows || '<tr><td colspan="4" class="muted">No ratings yet</td></tr>') + "</tbody></table></div></div></div>";
+    }
+
+    const STATUS_MAP = {
+      booked: "status.booked", "in-queue": "status.inQueue", weighing: "status.weighing",
+      qc: "status.qc", approved: "status.approved", rejected: "status.rejected",
+      paid: "status.paid", cancelled: "status.cancelled",
+    };
+
+    /* ---------- Audit ---------- */
+    function loadAudit() {
+      const action = document.getElementById("fAuditAction").value;
+      const box = document.getElementById("auditContent");
+      box.innerHTML = window.loadingSpinner();
+      window.api("/api/audit" + (action ? "?action=" + encodeURIComponent(action) : "")).then(function (rows) {
+        dash.audit = rows || [];
+        const actions = [];
+        rows.forEach(function (r) { if (!actions.includes(r.action)) actions.push(r.action); });
+        const sel = document.getElementById("fAuditAction");
+        if (sel.options.length <= 1) {
+          actions.forEach(function (a) {
+            const opt = document.createElement("option");
+            opt.value = a; opt.textContent = a;
+            sel.appendChild(opt);
+          });
+        }
+        renderAudit(rows);
+      }).catch(function (e) {
+        box.innerHTML = '<div class="empty-state"><div class="e-icon">⚠️</div><h3>Could not load audit log</h3></div>';
+        window.showError(e);
+      });
+    }
+
+    function renderAudit(rows) {
+      const box = document.getElementById("auditContent");
+      if (!rows.length) {
+        box.innerHTML = '<div class="empty-state"><div class="e-icon">🗂</div><h3>No audit entries</h3></div>';
+        return;
+      }
+      box.innerHTML =
+        '<div class="table-wrap"><table class="table"><thead><tr>' +
+        "<th>" + window.t("common.time") + "</th><th>" + window.t("common.actor") + "</th><th>" + window.t("common.actions") + "</th><th>" + window.t("common.target") + "</th><th>" + window.t("common.details") + "</th>" +
+        "</tr></thead><tbody>" +
+        rows.map(function (r) {
+          return "<tr>" +
+            "<td class='small'>" + fmtDateTime(r.createdAt) + "</td>" +
+            "<td>" + esc(r.actorName || "-") + "</td>" +
+            '<td><span class="badge badge-neutral">' + esc(r.action) + "</span></td>" +
+            '<td class="mono">' + esc(r.target) + "</td>" +
+            "<td class='small'>" + esc(r.details || "-") + "</td></tr>";
+        }).join("") +
+        "</tbody></table></div>" +
+        '<p class="small muted mt-2">Showing latest ' + rows.length + " entries.</p>";
+    }
+
+    /* ---------- Grievances ---------- */
+    function loadGrievances() {
+      const status = document.getElementById("fGStatus").value;
+      const box = document.getElementById("grievancesContent");
+      box.innerHTML = window.loadingSpinner();
+      window.api("/api/grievances" + (status ? "?status=" + encodeURIComponent(status) : "")).then(function (rows) {
+        dash.grievances = rows || [];
+        renderGrievances(dash.grievances);
+      }).catch(function (e) {
+        box.innerHTML = '<div class="empty-state"><div class="e-icon">⚠️</div><h3>Could not load grievances</h3></div>';
+        window.showError(e);
+      });
+    }
+
+    function renderGrievances(rows) {
+      const box = document.getElementById("grievancesContent");
+      if (!rows.length) {
+        box.innerHTML = '<div class="empty-state"><div class="e-icon">📮</div><h3>No grievances</h3></div>';
+        return;
+      }
+      box.innerHTML =
+        '<div class="table-wrap"><table class="table"><thead><tr>' +
+        "<th>" + window.t("common.ticket") + "</th><th>" + window.t("dash.farmer") + "</th><th>" + window.t("common.subject") + "</th><th>" + window.t("common.status") + "</th><th>" + window.t("common.updated") + "</th><th>" + window.t("common.actions") + "</th>" +
+        "</tr></thead><tbody>" +
+        rows.map(function (g) {
+          return "<tr>" +
+            '<td class="mono">' + esc(g.id) + "</td>" +
+            "<td>" + esc(g.farmerName) + "</td>" +
+            '<td><strong>' + esc(g.subject) + "</strong><br><span class='soft small'>" + esc((g.message || "").slice(0, 90)) + "</span></td>" +
+            "<td>" + window.statusBadge(g.status) + "</td>" +
+            "<td class='small'>" + fmtDateTime(g.updatedAt || g.createdAt) + "</td>" +
+            '<td><button class="btn btn-sm btn-outline" data-ganswer="' + esc(g.id) + '">Respond</button></td>' +
+            "</tr>";
+        }).join("") +
+        "</tbody></table></div>";
+    }
+
+    document.addEventListener("click", function (e) {
+      const gbtn = e.target.closest("[data-ganswer]");
+      if (!gbtn) return;
+      const id = gbtn.getAttribute("data-ganswer");
+      const g = dash.grievances.find(function (x) { return x.id === id; }) || {};
+      window.openModal(
+        '<div class="modal-head"><h3>Respond to ticket</h3><button class="modal-close" data-close="1">&times;</button></div>' +
+        '<div class="modal-body">' +
+        '<p class="small muted mb-2"><strong>' + esc(g.subject) + "</strong><br>" + esc(g.message) + "</p>" +
+        '<div class="form-group mb-2"><label for="gStatusNew">Status</label>' +
+        '<select class="select" id="gStatusNew">' +
+        ["open", "in-progress", "resolved", "closed"].map(function (o) {
+          return '<option value="' + o + '"' + (o === g.status ? " selected" : "") + ">" + esc(o) + "</option>";
+        }).join("") +
+        "</select></div>" +
+        '<div class="form-group"><label for="gNote">Officer note</label>' +
+        '<textarea class="textarea" id="gNote" maxlength="500" placeholder="Note will be sent to the farmer"></textarea></div>' +
+        "</div>" +
+        '<div class="modal-foot"><button class="btn btn-ghost" data-close="1">Cancel</button>' +
+        '<button class="btn btn-primary" id="gSaveBtn">Save response</button></div>'
+      );
+      document.getElementById("gSaveBtn").addEventListener("click", function () {
+        window.api("/api/grievances/" + encodeURIComponent(id), {
+          method: "POST",
+          body: { status: document.getElementById("gStatusNew").value, officerNote: document.getElementById("gNote").value.trim() },
+        })
+          .then(function () {
+            window.closeModal();
+            window.showToast("Grievance updated. Farmer notified.");
+            loadGrievances();
+          })
+          .catch(function (err) { window.showError(err); });
+      });
+    });
+
+    /* ---------- QR scan ---------- */
+    function openScanModal() {
+      window.openModal(
+        '<div class="modal-head"><h3>Scan / verify a lot</h3><button class="modal-close" data-close="1">&times;</button></div>' +
+        '<div class="modal-body">' +
+        '<div class="form-group mb-2"><label for="scanRef">Lot reference (booking ID)</label>' +
+        '<input class="input" id="scanRef" placeholder="e.g. BKG_xxx"></div>' +
+        '<div id="scanResult"></div>' +
+        "</div>" +
+        '<div class="modal-foot"><button class="btn btn-ghost" data-close="1">Close</button>' +
+        '<button class="btn btn-primary" id="scanGo">Verify</button></div>'
+      );
+      document.getElementById("scanGo").addEventListener("click", function () {
+        const ref = document.getElementById("scanRef").value.trim();
+        const out = document.getElementById("scanResult");
+        if (!ref) { out.innerHTML = '<div class="alert alert-error mt-2">Enter a lot reference.</div>'; return; }
+        out.innerHTML = window.loadingSpinner();
+        window.api("/api/qr/scan", { method: "POST", body: { ref: ref } })
+          .then(function (r) {
+            const l = r.lot || {};
+            out.innerHTML =
+              '<div class="alert alert-success mt-2 mb-2"><strong>✔ Verified</strong> — scanned by ' + esc(r.scannedBy) + "</div>" +
+              '<div class="table-wrap"><table class="table" style="min-width:0;">' +
+              row("Ref", l.ref) + row("Farmer", l.farmer) + row("Commodity", l.commodity + " · Grade " + l.grade) +
+              row("Quantity", l.quantity + " " + l.unit) + row("Centre", l.centre) + row("Date", l.date) +
+              '<tr><td class="small" style="background:var(--surface)"><strong>Status</strong></td><td>' + window.statusBadge(l.status) + "</td></tr>" +
+              row("Payment", l.payment) + row("Shipment", l.shipment) +
+              "</table></div>" +
+              '<p class="small muted mt-2">Scan history: ' + (r.scans || []).map(function (s) { return esc(s.scanner) + " @ " + timeAgo(s.createdAt); }).join(" → ") + "</p>";
+          })
+          .catch(function (err) {
+            out.innerHTML = '<div class="alert alert-error mt-2">' + esc(err.message) + "</div>";
+          });
+      });
+    }
+
+    function row(k, v) {
+      return '<tr><td class="small" style="background:var(--surface);width:140px;"><strong>' + esc(k) + '</strong></td><td>' + esc(v == null ? "-" : v) + "</td></tr>";
+    }
+
+    /* ---------- Test SMS ---------- */
+    function openSmsModal() {
+      window.openModal(
+        '<div class="modal-head"><h3>Send a test SMS</h3><button class="modal-close" data-close="1">&times;</button></div>' +
+        '<div class="modal-body">' +
+        '<div class="form-group mb-2"><label for="smsPhone">Mobile number (10 digits)</label>' +
+        '<input class="input" id="smsPhone" maxlength="10" inputmode="numeric" placeholder="98XXXXXXXX"></div>' +
+        '<div id="smsResult"></div>' +
+        "</div>" +
+        '<div class="modal-foot"><button class="btn btn-ghost" data-close="1">Close</button>' +
+        '<button class="btn btn-primary" id="smsGo">Send SMS</button></div>'
+      );
+      document.getElementById("smsGo").addEventListener("click", function () {
+        const phone = document.getElementById("smsPhone").value.trim();
+        const out = document.getElementById("smsResult");
+        if (!/^\d{10}$/.test(phone)) { out.innerHTML = '<div class="alert alert-error mt-2">Enter a valid 10-digit number.</div>'; return; }
+        window.api("/api/sms/test", { method: "POST", body: { phone: phone } })
+          .then(function (r) {
+            const status = r.delivered ? "Delivered ✅" : r.demo ? "Demo mode — logged to console 📄" : r.skipped ? "Skipped (no provider configured)" : "Sent";
+            out.innerHTML = '<div class="alert alert-success mt-2"><strong>✔ ' + esc(status) + "</strong> — " + esc(phone) + "</div>";
+            if (dash.stats) loadStats();
+          })
+          .catch(function (err) { out.innerHTML = '<div class="alert alert-error mt-2">' + esc(err.message) + "</div>"; });
+      });
+    }
+
+    function applyLangDropdowns() {
+      // ensure language-driven UI refreshed via nav re-render is enough
+    }
+
+    /* ---------- Commodity Dates Manager ---------- */
+    var cdState = {
+      commodities: [],
+      selectedCommodity: null,
+      availableDates: [],
+      viewMonth: new Date().getMonth(),
+      viewYear: new Date().getFullYear(),
+    };
+
+    function loadCommodityDatesManager() {
+      window.api("/api/commodities").then(function (list) {
+        cdState.commodities = list || [];
+        var sel = document.getElementById("cdCommodity");
+        sel.innerHTML = '<option value="">Select a commodity…</option>' + cdState.commodities.map(function (c) {
+          return '<option value="' + esc(c.id) + '">' + esc(c.name) + " — " + esc(c.category) + "</option>";
+        }).join("");
+      });
+    }
+
+    document.getElementById("cdCommodity").addEventListener("change", function () {
+      var id = this.value;
+      cdState.selectedCommodity = cdState.commodities.find(function (c) { return c.id === id; }) || null;
+      cdState.viewMonth = new Date().getMonth();
+      cdState.viewYear = new Date().getFullYear();
+      if (cdState.selectedCommodity) loadCDates();
+    });
+
+    document.getElementById("cdPrevMonth").addEventListener("click", function () {
+      cdState.viewMonth--;
+      if (cdState.viewMonth < 0) { cdState.viewMonth = 11; cdState.viewYear--; }
+      if (cdState.selectedCommodity) loadCDates();
+    });
+
+    document.getElementById("cdNextMonth").addEventListener("click", function () {
+      cdState.viewMonth++;
+      if (cdState.viewMonth > 11) { cdState.viewMonth = 0; cdState.viewYear++; }
+      if (cdState.selectedCommodity) loadCDates();
+    });
+
+    function loadCDates() {
+      if (!cdState.selectedCommodity) return;
+      var grid = document.getElementById("cdDateGrid");
+      var loading = document.getElementById("cdLoading");
+      var empty = document.getElementById("cdEmpty");
+      grid.innerHTML = "";
+      loading.style.display = "block";
+      empty.style.display = "none";
+
+      var monthStr = cdState.viewYear + "-" + String(cdState.viewMonth + 1).padStart(2, "0");
+      document.getElementById("cdMonthLabel").textContent = new Date(cdState.viewYear, cdState.viewMonth).toLocaleString("en", { month: "long", year: "numeric" });
+
+      window.api("/api/commodity-dates?commodityId=" + encodeURIComponent(cdState.selectedCommodity.id) + "&month=" + monthStr)
+        .then(function (dates) {
+          loading.style.display = "none";
+          cdState.availableDates = (dates || []).map(function (d) { return d.date; });
+          renderCDatesGrid();
+          renderCDatesList();
+        })
+        .catch(function (e) {
+          loading.style.display = "none";
+          showToast(e.message, "error");
+        });
+    }
+
+    function renderCDatesGrid() {
+      var grid = document.getElementById("cdDateGrid");
+      var empty = document.getElementById("cdEmpty");
+      var daysInMonth = new Date(cdState.viewYear, cdState.viewMonth + 1, 0).getDate();
+      var cells = [];
+      for (var d = 1; d <= daysInMonth; d++) {
+        var dateStr = cdState.viewYear + "-" + String(cdState.viewMonth + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+        var isAvailable = cdState.availableDates.indexOf(dateStr) !== -1;
+        var cls = "slot-btn" + (isAvailable ? " selected" : "");
+        cells.push(
+          '<button type="button" class="' + cls + '" data-date="' + dateStr + '">' +
+          d +
+          '<span class="slot-meta">' + (isAvailable ? "✓ Set" : "—") + '</span>' +
+          '</button>'
+        );
+      }
+      grid.innerHTML = cells.join("");
+
+      if (!daysInMonth) {
+        empty.style.display = "block";
+        grid.style.display = "none";
+      } else {
+        empty.style.display = "none";
+        grid.style.display = "";
+      }
+
+      grid.querySelectorAll(".slot-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var date = btn.getAttribute("data-date");
+          var isAvailable = cdState.availableDates.indexOf(date) !== -1;
+          if (isAvailable) {
+            removeCDate(date);
+          } else {
+            addCDate(date);
+          }
+        });
+      });
+    }
+
+    function addCDate(date) {
+      if (!cdState.selectedCommodity) return;
+      window.api("/api/commodity-dates", {
+        method: "POST",
+        body: { commodityId: cdState.selectedCommodity.id, dates: [date] }
+      }).then(function () {
+        showToast("Date " + fmtDate(date) + " enabled");
+        loadCDates();
+      }).catch(function (e) { showToast(e.message, "error"); });
+    }
+
+    function removeCDate(date) {
+      if (!cdState.selectedCommodity) return;
+      window.api("/api/commodity-dates", {
+        method: "DELETE",
+        body: { commodityId: cdState.selectedCommodity.id, date: date }
+      }).then(function () {
+        showToast("Date " + fmtDate(date) + " removed");
+        loadCDates();
+      }).catch(function (e) { showToast(e.message, "error"); });
+    }
+
+    function renderCDatesList() {
+      var el = document.getElementById("cdDatesList");
+      if (!cdState.availableDates.length) {
+        el.innerHTML = '<p class="small muted">No dates set for this month.</p>';
+        return;
+      }
+      el.innerHTML = '<div class="flex flex-wrap gap-1">' + cdState.availableDates.map(function (d) {
+        return '<span class="badge badge-approved">' + fmtDate(d) + '</span>';
+      }).join("") + '</div>';
+    }
+
+    /* ---------- Prices Manager ---------- */
+    function loadPricesManager() {
+      window.api("/api/commodities").then(function (list) {
+        var sel = document.getElementById("priceCommodity");
+        sel.innerHTML = '<option value="">Select commodity…</option>' + list.map(function (c) {
+          return '<option value="' + esc(c.id) + '" data-msp="' + c.msp + '">' + esc(c.name) + ' — MSP ₹' + fmtMoney(c.msp) + '</option>';
+        }).join("");
+      });
+      loadPricesTable();
+    }
+
+    document.getElementById("priceCommodity").addEventListener("change", function () {
+      var opt = this.options[this.selectedIndex];
+      if (opt && opt.value) document.getElementById("priceMsp").value = opt.getAttribute("data-msp") || "";
+    });
+
+    document.getElementById("btnUpdateMsp").addEventListener("click", function () {
+      var comId = document.getElementById("priceCommodity").value;
+      var msp = document.getElementById("priceMsp").value;
+      if (!comId || !msp) { showToast("Select commodity and enter MSP", "error"); return; }
+      var btn = this;
+      btn.disabled = true;
+      window.api("/api/prices/update", {
+        method: "POST",
+        body: { commodityId: comId, msp: parseFloat(msp) }
+      }).then(function () {
+        btn.disabled = false;
+        showToast("MSP updated successfully");
+        loadPricesTable();
+      }).catch(function (e) {
+        btn.disabled = false;
+        showToast(e.message, "error");
+      });
+    });
+
+    function loadPricesTable() {
+      var box = document.getElementById("pricesContent");
+      box.innerHTML = window.loadingSpinner();
+      window.api("/api/prices").then(function (data) {
+        if (!data.commodities || !data.commodities.length) {
+          box.innerHTML = '<div class="empty-state"><div class="e-icon">💰</div><h3>No prices data</h3></div>';
+          return;
+        }
+        var html = '<div class="table-wrap"><table class="table"><thead><tr><th>Commodity</th><th>MSP</th><th>District</th><th>Mandi Price</th><th>Difference</th></tr></thead><tbody>';
+        data.commodities.forEach(function (c) {
+          c.districts.forEach(function (d, i) {
+            var diff = d.mandi - c.msp;
+            var pct = ((diff / c.msp) * 100).toFixed(1);
+            var cls = diff >= 0 ? "color:var(--green-dark)" : "color:var(--red)";
+            html += '<tr>' +
+              (i === 0 ? '<td rowspan="' + c.districts.length + '"><strong>' + esc(c.commodityName) + '</strong></td><td rowspan="' + c.districts.length + '">₹' + fmtMoney(c.msp) + '</td>' : '') +
+              '<td>' + esc(d.district) + '</td>' +
+              '<td>₹' + fmtMoney(d.mandi) + '</td>' +
+              '<td style="' + cls + '">' + (diff >= 0 ? '+' : '') + '₹' + diff.toFixed(0) + ' (' + (diff >= 0 ? '+' : '') + pct + '%)</td>' +
+              '</tr>';
+          });
+        });
+        html += '</tbody></table></div>';
+        if (data.updatedAt) html += '<p class="small muted mt-2">Last updated: ' + fmtDate(data.updatedAt.split("T")[0]) + '</p>';
+        box.innerHTML = html;
+      }).catch(function (e) {
+        box.innerHTML = '<div class="alert alert-error">Failed to load prices</div>';
+      });
+    }
+  </script>
+</body>
+</html>

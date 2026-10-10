@@ -1,0 +1,13 @@
+# Secrets — never commit these
+.env
+
+# Database
+data/app.db
+data/app.db-wal
+data/app.db-shm
+
+# Node
+node_modules/
+
+# Logs
+*.log

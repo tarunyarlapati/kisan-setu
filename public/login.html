@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Kisan Setu</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .role-toggle {
+      display: flex; border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+      background: rgba(255,255,255,0.92); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    }
+    .role-toggle .role-btn {
+      flex: 1; border: 0; background: transparent; padding: 11px 10px;
+      font: 700 0.92rem var(--font); color: var(--text-muted); cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .role-toggle .role-btn + .role-btn { border-left: 1px solid var(--border); }
+    .role-toggle .role-btn.active { background: var(--green); color: #fff; }
+    .role-toggle .role-btn:hover:not(.active) { background: rgba(90,158,126,0.06); }
+
+    .benefit-list { list-style: none; padding: 0; margin: 0; }
+    .benefit-list li {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 10px 0; border-bottom: 1px dashed var(--border);
+      font-size: 0.92rem; line-height: 1.45;
+    }
+    .benefit-list li:last-child { border-bottom: 0; }
+    .benefit-list .b-ico { flex-shrink: 0; }
+
+    .demo-info {
+      margin-top: 18px; border: 1px solid var(--border); border-radius: 14px;
+      background: rgba(90,158,126,0.06); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+      padding: 16px 18px;
+    }
+    .demo-info-head {
+      display: flex; align-items: center; gap: 8px;
+      font-weight: 800; font-size: 0.88rem; margin-bottom: 4px; color: var(--text);
+    }
+    .demo-row {
+      display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+      padding: 8px 0; font-size: 0.85rem;
+    }
+    .demo-row + .demo-row { border-top: 1px dashed var(--border); }
+    .demo-row .mono { font-size: 0.82rem; }
+    .demo-row .mono:last-child { margin-left: auto; }
+  </style>
+</head>
+<body>
+  <nav id="appNav" class="navbar" aria-label="Main navigation"></nav>
+
+  <main>
+    <div class="container">
+      <div class="auth-wrap">
+        <div class="auth-side">
+          <h1 class="page-title" data-i18n="login.welcomeTitle">Welcome back 👋</h1>
+          <p class="page-sub" data-i18n="login.welcomeSub">
+            Log in to book procurement slots, track your shipments and follow your payments.
+            Officers can access the complete operations dashboard.
+          </p>
+          <div class="card card-pad">
+            <h3 class="mb-2" data-i18n="login.benefitTitle">Why farmers choose Kisan Setu</h3>
+            <ul class="benefit-list">
+              <li><span class="b-ico">📅</span><span data-i18n="login.benefit1">Book procurement slots in minutes</span></li>
+              <li><span class="b-ico">🚚</span><span data-i18n="login.benefit2">Track shipments from centre to depot</span></li>
+              <li><span class="b-ico">💰</span><span data-i18n="login.benefit3">Direct MSP payment to your bank / UPI</span></li>
+              <li><span class="b-ico">🌐</span><span data-i18n="login.benefit4">Voice assistant in Hindi, Telugu or English</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="auth-card">
+          <div class="card">
+            <div class="card-header">
+              <h3 data-i18n="login.heading">Login to your account</h3>
+            </div>
+            <div class="card-body">
+              <div id="formError" class="alert alert-error mb-3" style="display:none;"></div>
+
+              <div class="role-toggle mb-3" role="tablist" aria-label="Login as">
+                <button type="button" class="role-btn active" data-role="farmer" data-i18n="role.farmer">Farmer</button>
+                <button type="button" class="role-btn" data-role="officer" data-i18n="role.officer">Officer</button>
+              </div>
+              <p class="small muted mb-3" id="roleHint">Login as a farmer to book slots, track shipments and receive MSP payments.</p>
+
+              <form id="loginForm" novalidate>
+                <div class="form-group mb-3">
+                  <label for="email" data-i18n="common.emailAddress">Email address</label>
+                  <input class="input" type="email" id="email" name="email" autocomplete="username"
+                         placeholder="you@example.com" required>
+                </div>
+                <div class="form-group mb-3">
+                  <label for="password" data-i18n="common.password">Password</label>
+                  <input class="input" type="password" id="password" name="password" autocomplete="current-password"
+                         placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg btn-block" id="loginBtn">
+                  <span id="loginBtnText" data-i18n="login.submit">Log in</span>
+                  <span id="loginSpinner" class="spinner" style="width:18px;height:18px;border-width:2px;display:none;"></span>
+                </button>
+              </form>
+              <hr class="divider">
+              <p class="small muted text-center mb-0">
+                <span data-i18n="login.newHere">New to Kisan Setu?</span>
+                <a href="/register"><strong data-i18n="login.createAccount">Create a farmer account</strong></a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/i18n.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/chatbot.js" defer></script>
+  <script>
+    window.initApp({ active: "login" });
+
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const errBox = document.getElementById("formError");
+
+    function setRole(role) {
+      document.querySelectorAll(".role-btn").forEach(function (b) {
+        b.classList.toggle("active", b.getAttribute("data-role") === role);
+      });
+      document.getElementById("roleHint").textContent =
+        role === "officer" ? window.t("login.roleOfficerHint") : window.t("login.roleFarmerHint");
+      window.translatePage();
+    }
+    var currentRole = "farmer";
+    document.querySelectorAll(".role-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        currentRole = btn.getAttribute("data-role");
+        setRole(currentRole);
+      });
+    });
+
+    document.getElementById("loginForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      errBox.style.display = "none";
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      if (!email || !password) {
+        errBox.textContent = window.t("login.enterBoth");
+        errBox.style.display = "block";
+        return;
+      }
+
+      const btn = document.getElementById("loginBtn");
+      const btnText = document.getElementById("loginBtnText");
+      const spinner = document.getElementById("loginSpinner");
+      btn.disabled = true;
+      btnText.textContent = window.t("login.loggingIn");
+      spinner.style.display = "inline-block";
+
+      window.api("/api/login", { method: "POST", body: { email: email, password: password, role: currentRole } })
+        .then(function (res) {
+          if (res.success && res.redirect) {
+            localStorage.setItem("ks_logged_in", "1");
+            window.location.href = res.redirect;
+          } else {
+            throw new Error("Unexpected response from server");
+          }
+        })
+        .catch(function (err) {
+          btn.disabled = false;
+          btnText.textContent = window.t("login.submit");
+          spinner.style.display = "none";
+          errBox.textContent = err.message || window.t("login.failed");
+          errBox.style.display = "block";
+        });
+    });
+  </script>
+</body>
+</html>

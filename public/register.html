@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Farmer Registration — Kisan Setu</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav id="appNav" class="navbar" aria-label="Main navigation"></nav>
+
+  <main>
+    <div class="container" style="max-width: 760px; padding: 40px 18px 0;">
+      <div class="page-header text-center mb-3">
+        <h1 class="page-title" data-i18n="register.title">Farmer Registration</h1>
+        <p class="text-center muted page-sub" style="margin-bottom: 0;">
+          <span data-i18n="register.sub">Join Kisan Setu and sell your produce at MSP — book slots, track shipments, get paid fast.</span>
+          <a href="/login" data-i18n="register.alreadyRegistered"><strong>Already registered? Log in</strong></a>
+        </p>
+      </div>
+
+      <!-- Stepper -->
+      <div class="stepper-box mb-3">
+        <div class="stepper" id="stepper">
+          <div class="step is-active" data-step="1"><span class="step-dot">1</span><span class="step-label" data-i18n="register.step1">Personal</span></div>
+          <div class="step" data-step="2"><span class="step-dot">2</span><span class="step-label" data-i18n="register.step2">Payment</span></div>
+          <div class="step" data-step="3"><span class="step-dot">3</span><span class="step-label" data-i18n="register.step3">Notifications</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div id="formError" class="alert alert-error mb-3" style="display:none;"></div>
+
+          <!-- STEP 1: PERSONAL -->
+          <section class="step-panel active" data-panel="1">
+            <h3 class="mb-3" data-i18n="register.personalHeading">Personal details</h3>
+            <div class="form-grid">
+              <div class="form-group mt-2">
+                <label for="name" data-i18n="register.name">Full name *</label>
+                <input class="input" type="text" id="name" name="name" autocomplete="name" placeholder="e.g. Ram Singh" data-i18n-placeholder="register.namePlaceholder" required>
+                <span class="hint" data-i18n="register.nameHint">As per your Aadhaar / ID</span>
+              </div>
+              <div class="form-group mt-2">
+                <label for="phone" data-i18n="register.phone">Mobile number *</label>
+                <input class="input" type="tel" id="phone" name="phone" maxlength="10" inputmode="numeric"
+                       autocomplete="tel" placeholder="10-digit mobile number" data-i18n-placeholder="register.phonePlaceholder" required>
+              </div>
+              <div class="form-group full mt-2">
+                <label for="email" data-i18n="common.emailAddress">Email address *</label>
+                <input class="input" type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com" required>
+              </div>
+              <div class="form-group mt-2">
+                <label for="aadhaar" data-i18n="register.aadhaar">Aadhaar number</label>
+                <input class="input" type="text" id="aadhaar" name="aadhaar" maxlength="12" inputmode="numeric" placeholder="12-digit Aadhaar" data-i18n-placeholder="register.aadhaarPlaceholder">
+              </div>
+              <div class="form-group mt-2">
+                <label for="landSize" data-i18n="register.landSize">Land size (acres)</label>
+                <input class="input" type="number" id="landSize" name="landSize" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 2.5" data-i18n-placeholder="register.landSizePlaceholder">
+              </div>
+              <div class="form-group mt-2">
+                <label for="district" data-i18n="common.district">District</label>
+                <input class="input" type="text" id="district" name="district" placeholder="e.g. Nizamabad" data-i18n-placeholder="register.districtPlaceholder">
+              </div>
+              <div class="form-group mt-2">
+                <label for="village" data-i18n="common.village">Village</label>
+                <input class="input" type="text" id="village" name="village" placeholder="e.g. Armoor" data-i18n-placeholder="register.villagePlaceholder">
+              </div>
+            </div>
+            <div class="flex-between mt-4">
+              <span></span>
+              <button type="button" class="btn btn-primary" id="step1Next" data-i18n="register.step1Next">Next: Payment →</button>
+            </div>
+          </section>
+
+          <!-- STEP 2: PAYMENT -->
+          <section class="step-panel" data-panel="2">
+            <h3 class="mb-3" data-i18n="register.paymentHeading">Payment method</h3>
+            <p class="small muted mb-3" data-i18n="register.paymentSub">This is where your MSP payment will be released after procurement + QC approval.</p>
+
+            <div class="flex gap-2 mb-3" style="gap: 12px;">
+              <button type="button" class="btn btn-outline" id="methodBank" style="flex:1;" data-i18n="register.methodBank">🏦 Bank Account</button>
+              <button type="button" class="btn btn-outline" id="methodUpi" style="flex:1;" data-i18n="register.methodUpi">📱 UPI</button>
+            </div>
+
+            <!-- Bank fields -->
+            <div class="form-grid" id="bankFields" style="display:block;">
+              <div class="form-group mt-2" style="grid-column: 1 / -1;">
+                <label for="bankName" data-i18n="register.bankName">Bank name</label>
+                <input class="input" type="text" id="bankName" name="bankName" placeholder="e.g. State Bank of India" data-i18n-placeholder="register.bankNamePlaceholder">
+              </div>
+              <div class="form-group mt-2">
+                <label for="accountNumber" data-i18n="register.accountNumber">Account number</label>
+                <input class="input" type="text" id="accountNumber" name="accountNumber" inputmode="numeric" placeholder="Your bank account number">
+              </div>
+              <div class="form-group mt-2">
+                <label for="ifscCode" data-i18n="register.ifsc">IFSC code</label>
+                <input class="input" type="text" id="ifscCode" name="ifscCode" placeholder="e.g. SBIN0001234" data-i18n-placeholder="register.ifscPlaceholder" style="text-transform:uppercase;">
+              </div>
+            </div>
+
+            <!-- UPI fields -->
+            <div class="form-group mb-1" id="upiFields" style="display:none;">
+              <label for="upiId" data-i18n="register.upiId">UPI ID</label>
+              <input class="input" type="text" id="upiId" name="upiId" placeholder="e.g. ram.singh@oksbi" data-i18n-placeholder="register.upiIdPlaceholder">
+              <span class="hint" data-i18n="register.upiHint">If you choose bank, leave this empty.</span>
+            </div>
+
+            <div class="flex-between mt-4">
+              <button type="button" class="btn btn-ghost" id="step2Back" data-i18n="register.back">← Back</button>
+              <button type="button" class="btn btn-primary" id="step2Next" data-i18n="register.step2Next">Next: Notifications →</button>
+            </div>
+          </section>
+
+          <!-- STEP 3: NOTIFICATIONS + PASSWORD -->
+          <section class="step-panel" data-panel="3">
+            <h3 class="mb-3" data-i18n="register.notifHeading">Notifications &amp; password</h3>
+
+            <div class="panel mb-3" style="background:#fff;">
+              <label class="check-row">
+                <input type="checkbox" id="smsAllowed" checked>
+                <span data-i18n="register.smsAllowed">Allow SMS notifications on my mobile<br><small class="soft" data-i18n="register.smsAllowedSub">Slot confirmations, reminders, payment alerts</small></span>
+              </label>
+              <label class="check-row" style="border-top:1px solid var(--border-soft);">
+                <input type="checkbox" id="emailAllowed" checked>
+                <span data-i18n="register.emailAllowed">Allow email notifications<br><small class="soft" data-i18n="register.emailAllowedSub">Receipts and status updates to my email</small></span>
+              </label>
+            </div>
+
+            <div class="form-group mb-3">
+              <label for="password" data-i18n="register.createPassword">Create a password *</label>
+              <input class="input" type="password" id="password" name="password" minlength="6" autocomplete="new-password"
+                     placeholder="At least 6 characters" data-i18n-placeholder="register.passwordPlaceholder" required>
+              <span class="hint" data-i18n="register.passwordHint">Minimum 6 characters. Keep it private.</span>
+            </div>
+            <div class="form-group mb-1">
+              <label for="password2" data-i18n="register.confirmPassword">Confirm password *</label>
+              <input class="input" type="password" id="password2" name="password2" autocomplete="new-password"
+                     placeholder="Re-enter password" data-i18n-placeholder="register.confirmPlaceholder" required>
+            </div>
+
+            <div class="alert alert-warn mb-3 mt-3" data-i18n="register.aadhaarWarn">
+              Ensure your name and Aadhaar match your ID documents. Inaccurate details may delay your payment.
+            </div>
+
+            <div class="flex-between mt-4">
+              <button type="button" class="btn btn-ghost" id="step3Back" data-i18n="register.back">← Back</button>
+              <button type="submit" class="btn btn-primary btn-lg" id="registerBtn">
+                <span id="registerBtnText" data-i18n="register.create">Create my account</span>
+                <span id="registerSpinner" class="spinner" style="width:18px;height:18px;border-width:2px;display:none;"></span>
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/i18n.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/chatbot.js" defer></script>
+  <script>
+    window.initApp({ active: "register" });
+
+    let paymentMethod = "bank";
+
+    function gotoStep(n) {
+      document.querySelectorAll(".step-panel").forEach(function (p) { p.classList.remove("active"); });
+      document.querySelector('.step-panel[data-panel="' + n + '"]').classList.add("active");
+      document.querySelectorAll(".step").forEach(function (s) {
+        const i = parseInt(s.getAttribute("data-step"), 10);
+        s.classList.toggle("is-active", i === n);
+        s.classList.toggle("is-done", i < n);
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      const err = document.getElementById("formError");
+      err.style.display = "none";
+    }
+
+    function setMethod(method) {
+      paymentMethod = method;
+      const bankBtn = document.getElementById("methodBank");
+      const upiBtn = document.getElementById("methodUpi");
+      bankBtn.classList.toggle("btn-primary", method === "bank");
+      bankBtn.classList.toggle("btn-outline", method !== "bank");
+      upiBtn.classList.toggle("btn-primary", method === "upi");
+      upiBtn.classList.toggle("btn-outline", method !== "upi");
+      document.getElementById("bankFields").style.display = method === "bank" ? "block" : "none";
+      document.getElementById("upiFields").style.display = method === "upi" ? "block" : "none";
+    }
+    setMethod("bank");
+    document.getElementById("methodBank").addEventListener("click", function () { setMethod("bank"); });
+    document.getElementById("methodUpi").addEventListener("click", function () { setMethod("upi"); });
+
+    function showError(msg) {
+      const err = document.getElementById("formError");
+      err.textContent = msg;
+      err.style.display = "block";
+    }
+
+    function validateStep1() {
+      const name = document.getElementById("name").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const email = document.getElementById("email").value.trim();
+      if (!name) { showError("Please enter your full name."); return false; }
+      if (!/^\d{10}$/.test(phone)) { showError("Enter a valid 10-digit mobile number."); return false; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError("Enter a valid email address."); return false; }
+      return true;
+    }
+
+    function validateStep2() {
+      if (paymentMethod === "bank") {
+        const acct = document.getElementById("accountNumber").value.trim();
+        const ifsc = document.getElementById("ifscCode").value.trim();
+        if (!acct || !ifsc) { showError("Enter your bank account number and IFSC code (or switch to UPI)."); return false; }
+      } else {
+        const upi = document.getElementById("upiId").value.trim();
+        if (!upi) { showError("Enter your UPI ID (or switch to bank)."); return false; }
+      }
+      return true;
+    }
+
+    document.getElementById("step1Next").addEventListener("click", function () {
+      if (validateStep1()) gotoStep(2);
+    });
+    document.getElementById("step2Back").addEventListener("click", function () { gotoStep(1); });
+    document.getElementById("step2Next").addEventListener("click", function () {
+      if (validateStep2()) gotoStep(3);
+    });
+    document.getElementById("step3Back").addEventListener("click", function () { gotoStep(2); });
+
+    document.getElementById("registerBtn").addEventListener("click", function () {
+      // Re-validate
+      if (!validateStep1() || !validateStep2()) {
+        gotoStep(validateStep1() ? 2 : 1);
+        return;
+      }
+      const p1 = document.getElementById("password").value;
+      const p2 = document.getElementById("password2").value;
+      if (p1.length < 6) { showError("Password must be at least 6 characters."); return; }
+      if (p1 !== p2) { showError("Passwords do not match."); return; }
+
+      const payload = {
+        name: document.getElementById("name").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        aadhaar: document.getElementById("aadhaar").value.trim().replace(/[^0-9]/g, ""),
+        district: document.getElementById("district").value.trim(),
+        village: document.getElementById("village").value.trim(),
+        landSize: document.getElementById("landSize").value || 0,
+        password: p1,
+        paymentMethod: paymentMethod,
+        smsAllowed: document.getElementById("smsAllowed").checked ? 1 : 0,
+        emailAllowed: document.getElementById("emailAllowed").checked ? 1 : 0,
+      };
+      if (paymentMethod === "bank") {
+        payload.bankName = document.getElementById("bankName").value.trim();
+        payload.accountNumber = document.getElementById("accountNumber").value.trim();
+        payload.ifscCode = document.getElementById("ifscCode").value.trim().toUpperCase();
+        payload.upiId = "";
+      } else {
+        payload.upiId = document.getElementById("upiId").value.trim();
+        payload.bankName = ""; payload.accountNumber = ""; payload.ifscCode = "";
+      }
+
+      const btn = document.getElementById("registerBtn");
+      const btnText = document.getElementById("registerBtnText");
+      const spinner = document.getElementById("registerSpinner");
+      btn.disabled = true;
+      btnText.textContent = "Creating account…";
+      spinner.style.display = "inline-block";
+
+      window.api("/api/register", { method: "POST", body: payload })
+        .then(function (res) {
+          if (res.success && res.redirect) {
+            window.showToast("Account created successfully! Welcome to Kisan Setu.");
+            setTimeout(function () { window.location.href = res.redirect; }, 800);
+          } else {
+            throw new Error("Unexpected response from server");
+          }
+        })
+        .catch(function (err) {
+          btn.disabled = false;
+          btnText.textContent = "Create my account";
+          spinner.style.display = "none";
+          showError(err.message || "Registration failed. Please try again.");
+        });
+    });
+  </script>
+</body>
+</html>

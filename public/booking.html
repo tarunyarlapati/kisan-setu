@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book a Procurement Slot — Kisan Setu</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav id="appNav" class="navbar" aria-label="Main navigation"></nav>
+
+  <main>
+    <div class="container" style="max-width: 980px; padding: 36px 18px 0;">
+      <div class="page-header mb-3">
+        <div class="flex-between">
+          <div>
+            <h1 class="page-title" data-i18n="booking.title">Book a Procurement Slot</h1>
+            <p class="muted" id="bookingIntro" data-i18n="booking.intro">Choose a centre, select your commodity, pick an available date and reserve a time slot.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stepper -->
+      <div class="stepper-box mt-3 mb-3" id="stepperWrap" style="max-width:920px;">
+        <div class="stepper" id="stepper">
+          <div class="step is-active" data-step="1"><span class="step-dot">1</span><span class="step-label">Centre</span></div>
+          <div class="step" data-step="2"><span class="step-dot">2</span><span class="step-label">Commodity</span></div>
+          <div class="step" data-step="3"><span class="step-dot">3</span><span class="step-label">Date</span></div>
+          <div class="step" data-step="4"><span class="step-dot">4</span><span class="step-label">Time Slot</span></div>
+          <div class="step" data-step="5"><span class="step-dot">5</span><span class="step-label">Quantity</span></div>
+        </div>
+      </div>
+
+      <div id="formError" class="alert alert-error mb-3" style="display:none;"></div>
+
+      <!-- STEP 1: CENTRE -->
+      <section class="step-panel active" data-panel="1">
+        <h3 class="mb-2" data-i18n="booking.chooseCentre">Choose a centre</h3>
+        <p class="small muted mb-3">Select the procurement centre nearest to you.</p>
+        <div id="centreList" class="grid grid-3"></div>
+        <div class="flex-between mt-4">
+          <span></span>
+          <button type="button" class="btn btn-primary" id="step1Next" disabled>Next: Commodity →</button>
+        </div>
+      </section>
+
+      <!-- STEP 2: COMMODITY -->
+      <section class="step-panel" data-panel="2">
+        <div class="card card-pad mb-3">
+          <div class="mb-2">
+            <span class="badge badge-approved" id="selCentreBadge">No centre selected</span>
+          </div>
+          <div class="form-group" style="max-width: 440px;">
+            <label for="commoditySelect" data-i18n="booking.pickCommodity">Select commodity to sell</label>
+            <select class="select" id="commoditySelect">
+              <option value="">Loading commodities…</option>
+            </select>
+          </div>
+          <div id="commodityInfo" class="alert alert-info mt-3 mb-0" style="display:none;">
+            <div>
+              <strong id="comName">-</strong> &nbsp;MSP: <strong id="comMsp">-</strong> / qu ×
+              <span id="comCategory">-</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex-between mt-2">
+          <button type="button" class="btn btn-ghost" id="step2Back">← Back</button>
+          <button type="button" class="btn btn-primary" id="step2Next" disabled>Next: Date →</button>
+        </div>
+      </section>
+
+      <!-- STEP 3: DATE (filtered by commodity) -->
+      <section class="step-panel" data-panel="3">
+        <div class="card card-pad mb-3">
+          <div class="mb-2">
+            <span class="badge badge-approved" id="selCentreBadge2">-</span>
+            <span class="badge badge-booked" id="selCommodityBadge">-</span>
+          </div>
+          <h3 class="mb-1">Select procurement date</h3>
+          <p class="small muted mb-3">Only dates available for <strong id="commodityLabel">this commodity</strong> are shown.</p>
+          <div class="flex-between mb-3" style="max-width:320px;">
+            <button type="button" class="btn btn-ghost btn-sm" id="prevMonth">← Prev</button>
+            <strong id="monthLabel">-</strong>
+            <button type="button" class="btn btn-ghost btn-sm" id="nextMonth">Next →</button>
+          </div>
+          <div id="dateGrid" class="slot-grid" style="grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));"></div>
+          <div id="dateLoading" style="padding: 30px 0;" class="text-center muted">Loading available dates…</div>
+          <div id="dateEmpty" style="display:none;" class="empty-state">
+            <div class="e-icon">📅</div>
+            <h3>No available dates</h3>
+            <p>No procurement dates are set for this commodity in this month.</p>
+          </div>
+        </div>
+        <div class="flex-between">
+          <button type="button" class="btn btn-ghost" id="step3Back">← Back</button>
+          <button type="button" class="btn btn-primary" id="step3Next" disabled>Next: Time Slot →</button>
+        </div>
+      </section>
+
+      <!-- STEP 4: TIME SLOT -->
+      <section class="step-panel" data-panel="4">
+        <div class="card card-pad mb-3">
+          <div class="mb-2">
+            <span class="badge badge-approved" id="selCentreBadge3">-</span>
+            <span class="badge badge-booked" id="selDateBadge">-</span>
+            <span class="badge badge-in-queue" id="selCommodityBadge2">-</span>
+          </div>
+          <h3 class="mb-1" data-i18n="booking.chooseSlot">Choose your time slot</h3>
+          <p class="small muted mb-3" id="slotCentreLine">-</p>
+          <div id="slotGrid" class="slot-grid"></div>
+          <div id="slotLoading" style="padding: 30px 0;" class="text-center muted">Loading availability…</div>
+        </div>
+        <div class="flex-between">
+          <button type="button" class="btn btn-ghost" id="step4Back">← Back</button>
+          <button type="button" class="btn btn-primary" id="step4Next" disabled data-i18n="booking.nextQty">Next: Quantity →</button>
+        </div>
+      </section>
+
+      <!-- STEP 5: QUANTITY + REVIEW -->
+      <section class="step-panel" data-panel="5">
+        <div class="card card-pad mb-3">
+          <h3 class="mb-2" data-i18n="booking.quantityGrade">Quantity &amp; grade</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="quantity" data-i18n="booking.quantity">Quantity (in quintals)</label>
+              <input class="input" type="number" id="quantity" min="0.1" step="0.1" inputmode="decimal" placeholder="e.g. 5" data-i18n-placeholder="booking.quantityPlaceholder">
+            </div>
+            <div class="form-group">
+              <label for="grade" data-i18n="common.grade">Grade</label>
+              <select class="select" id="grade">
+                <option value="A" selected data-i18n="booking.gradeA">Grade A — Best quality</option>
+                <option value="B" data-i18n="booking.gradeB">Grade B</option>
+                <option value="C" data-i18n="booking.gradeC">Grade C</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-pad mb-3" style="background: var(--surface);">
+          <h3 class="mb-3" data-i18n="booking.review">Review your booking</h3>
+          <div class="bc-facts">
+            <div class="bc-fact"><div class="f-label" data-i18n="booking.reviewCentre">Centre</div><div class="f-value" id="revCentre">-</div></div>
+            <div class="bc-fact"><div class="f-label" data-i18n="booking.reviewCommodity">Commodity</div><div class="f-value" id="revCommodity">-</div></div>
+            <div class="bc-fact"><div class="f-label" data-i18n="booking.reviewDate">Date</div><div class="f-value" id="revDate">-</div></div>
+            <div class="bc-fact"><div class="f-label" data-i18n="booking.reviewTimeSlot">Time slot</div><div class="f-value" id="revSlot">-</div></div>
+            <div class="bc-fact"><div class="f-label" data-i18n="booking.reviewQty">Quantity</div><div class="f-value" id="revQty">-</div></div>
+            <div class="bc-fact"><div class="f-label" data-i18n="booking.reviewGrade">Grade</div><div class="f-value" id="revGrade">-</div></div>
+            <div class="bc-fact"><div class="f-label" data-i18n="booking.reviewMsp">MSP</div><div class="f-value" id="revMsp">-</div></div>
+            <div class="bc-fact"><div class="f-label" data-i18n="booking.reviewEst">Estimated value</div><div class="f-value" style="font-size:1.1rem;" id="revEst">-</div></div>
+          </div>
+        </div>
+
+        <div class="flex-between">
+          <button type="button" class="btn btn-ghost" id="step5Back">← Back</button>
+          <button type="button" class="btn btn-orange btn-lg" id="submitBooking">
+            <span id="submitText" data-i18n="booking.confirm">Confirm booking</span>
+            <span id="submitSpinner" class="spinner" style="width:18px;height:18px;border-width:2px;display:none;"></span>
+          </button>
+        </div>
+      </section>
+
+      <!-- SUCCESS -->
+      <section class="step-panel" data-panel="6">
+        <div class="card card-pad text-center" style="padding:40px 24px;">
+          <div style="font-size:3rem;">✅</div>
+          <h2 class="mb-2" data-i18n="booking.successTitle">Slot booked successfully!</h2>
+          <p class="muted mb-3" id="successMsg">Your procurement slot is confirmed. Show the QR below at the centre on arrival.</p>
+          <div class="qr-box mb-3" id="successQrBox">
+            <img id="successQr" alt="Booking QR code" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+          </div>
+          <p class="mono small muted mb-3" id="successRef">-</p>
+          <div class="flex-center gap-2" style="flex-wrap: wrap;">
+            <a class="btn btn-primary" href="/booking" data-i18n="booking.bookAnother">Book another slot</a>
+            <a class="btn btn-outline" href="/my-bookings" data-i18n="booking.viewBookings">View my bookings</a>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/js/i18n.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/chatbot.js" defer></script>
+  <script>
+    window.initApp({ active: "booking", requireRole: "farmer", loginRedirect: "/login" })
+      .then(function () {
+        initBooking();
+      });
+
+    const state = {
+      centres: [],
+      selectedCentre: null,
+      commodities: [],
+      selectedCommodity: null,
+      availableDates: [],
+      selectedDate: null,
+      selectedSlot: null,
+      viewMonth: new Date().getMonth(),
+      viewYear: new Date().getFullYear(),
+    };
+
+    function gotoStep(n) {
+      document.querySelectorAll(".step-panel").forEach(function (p) { p.classList.remove("active"); });
+      var panel = document.querySelector('.step-panel[data-panel="' + n + '"]');
+      if (!panel) return;
+      panel.classList.add("active");
+      document.querySelectorAll(".step").forEach(function (s) {
+        var i = parseInt(s.getAttribute("data-step"), 10);
+        s.classList.toggle("is-active", i === n);
+        s.classList.toggle("is-done", i < n);
+      });
+      document.getElementById("formError").style.display = "none";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function showError(msg) {
+      var err = document.getElementById("formError");
+      err.textContent = msg;
+      err.style.display = "block";
+    }
+
+    function initBooking() {
+      loadCentres();
+      loadCommodities();
+    }
+
+    /* ---------- STEP 1: centres ---------- */
+    function loadCentres() {
+      var list = document.getElementById("centreList");
+      list.innerHTML = window.skeletonCards(4);
+      document.getElementById("step1Next").disabled = true;
+      window.api("/api/centres/load?date=" + encodeURIComponent(todayIso()))
+        .then(function (res) {
+          state.centres = res.centres || [];
+          if (!state.centres.length) {
+            list.innerHTML = '<div class="empty-state"><div class="e-icon">🏪</div><h3>No procurement centres available</h3><p>Try again later.</p></div>';
+            return;
+          }
+          renderCentres(state.centres);
+        })
+        .catch(function (e) {
+          list.innerHTML = '<div class="empty-state"><div class="e-icon">⚠️</div><h3>Could not load centres</h3>' +
+            '<button class="btn btn-outline mt-2" onclick="loadCentres()">' + window.t("common.retry") + '</button></div>';
+          showToast(e.message, "error");
+        });
+    }
+
+    function renderCentres(centres) {
+      var list = document.getElementById("centreList");
+      list.innerHTML = centres.map(function (c) {
+        var freeLabel = c.free > 0 ? c.free + ' ' + window.t("booking.free") : window.t("booking.full");
+        return (
+          '<div class="centre-card card" data-centre="' + esc(c.id) + '">' +
+          '<div class="cc-head">' +
+          '<div><div class="cc-name">' + esc(c.name) + '</div>' +
+          '<div class="cc-district">' + esc(c.district) + (c.state ? " · " + esc(c.state) : "") + "</div></div>" +
+          window.loadBadge(c.load) +
+          "</div>" +
+          '<div class="cc-meta">' +
+          '<span class="chip">🎯 ' + c.capacityTotal + " " + window.t("booking.slotsPerDay") + "</span>" +
+          '<span class="chip">✔ ' + freeLabel + "</span>" +
+          '<span class="chip">📌 ' + c.slots + "h window</span>" +
+          "</div>" +
+          "</div>"
+        );
+      }).join("");
+      list.querySelectorAll(".centre-card").forEach(function (card) {
+        card.addEventListener("click", function () {
+          list.querySelectorAll(".centre-card").forEach(function (c) { c.classList.remove("selected"); });
+          card.classList.add("selected");
+          var id = card.getAttribute("data-centre");
+          state.selectedCentre = state.centres.find(function (c) { return c.id === id; }) || null;
+          document.getElementById("step1Next").disabled = false;
+          window.showToast("Centre selected");
+        });
+      });
+    }
+
+    document.getElementById("step1Next").addEventListener("click", function () {
+      if (!state.selectedCentre) { showError("Please select a centre."); return; }
+      document.getElementById("selCentreBadge").textContent = "🏪 " + state.selectedCentre.name;
+      document.getElementById("selCentreBadge2").textContent = "🏪 " + state.selectedCentre.name;
+      document.getElementById("selCentreBadge3").textContent = "🏪 " + state.selectedCentre.name;
+      gotoStep(2);
+    });
+
+    /* ---------- STEP 2: commodities ---------- */
+    function loadCommodities() {
+      window.api("/api/commodities").then(function (list) {
+        state.commodities = list || [];
+        var sel = document.getElementById("commoditySelect");
+        if (!state.commodities.length) {
+          sel.innerHTML = '<option value="">No commodities open for procurement</option>';
+          return;
+        }
+        sel.innerHTML = '<option value="">Select a commodity…</option>' + state.commodities.map(function (c) {
+          return '<option value="' + esc(c.id) + '">' + esc(c.name) + " — " + esc(c.category) + " · " +
+            fmtMoney(c.msp) + "/" + esc(c.unit) + "</option>";
+        }).join("");
+      }).catch(function (e) {
+        var sel = document.getElementById("commoditySelect");
+        sel.innerHTML = '<option value="">Failed to load commodities</option>';
+        showToast(e.message, "error");
+      });
+    }
+
+    document.getElementById("commoditySelect").addEventListener("change", function () {
+      var id = this.value;
+      state.selectedCommodity = state.commodities.find(function (c) { return c.id === id; }) || null;
+      var info = document.getElementById("commodityInfo");
+      if (state.selectedCommodity) {
+        document.getElementById("comName").textContent = state.selectedCommodity.name;
+        document.getElementById("comMsp").textContent = fmtMoney(state.selectedCommodity.msp);
+        document.getElementById("comCategory").textContent = state.selectedCommodity.category + " · " + state.selectedCommodity.unit;
+        info.style.display = "block";
+        document.getElementById("step2Next").disabled = false;
+      } else {
+        info.style.display = "none";
+        document.getElementById("step2Next").disabled = true;
+      }
+      state.selectedDate = null;
+      state.selectedSlot = null;
+    });
+
+    document.getElementById("step2Back").addEventListener("click", function () { gotoStep(1); });
+    document.getElementById("step2Next").addEventListener("click", function () {
+      if (!state.selectedCommodity) { showError("Please select a commodity."); return; }
+      document.getElementById("selCommodityBadge").textContent = "🌾 " + state.selectedCommodity.name;
+      document.getElementById("selCommodityBadge2").textContent = "🌾 " + state.selectedCommodity.name;
+      document.getElementById("commodityLabel").textContent = state.selectedCommodity.name;
+      state.viewMonth = new Date().getMonth();
+      state.viewYear = new Date().getFullYear();
+      loadCommodityDates();
+      gotoStep(3);
+    });
+
+    /* ---------- STEP 3: date (filtered by commodity) ---------- */
+    function loadCommodityDates() {
+      var grid = document.getElementById("dateGrid");
+      var loading = document.getElementById("dateLoading");
+      var empty = document.getElementById("dateEmpty");
+      grid.innerHTML = "";
+      loading.style.display = "block";
+      empty.style.display = "none";
+      document.getElementById("step3Next").disabled = true;
+
+      var monthStr = state.viewYear + "-" + String(state.viewMonth + 1).padStart(2, "0");
+      document.getElementById("monthLabel").textContent = new Date(state.viewYear, state.viewMonth).toLocaleString("en", { month: "long", year: "numeric" });
+
+      window.api("/api/commodity-dates?commodityId=" + encodeURIComponent(state.selectedCommodity.id) + "&month=" + monthStr)
+        .then(function (dates) {
+          loading.style.display = "none";
+          state.availableDates = (dates || []).map(function (d) { return d.date; });
+          renderDateGrid();
+        })
+        .catch(function (e) {
+          loading.style.display = "none";
+          grid.innerHTML = '<div class="empty-state"><div class="e-icon">⚠️</div><h3>Could not load dates</h3>' +
+            '<button class="btn btn-outline mt-2" onclick="loadCommodityDates()">' + window.t("common.retry") + '</button></div>';
+          showToast(e.message, "error");
+        });
+    }
+
+    function renderDateGrid() {
+      var grid = document.getElementById("dateGrid");
+      var empty = document.getElementById("dateEmpty");
+      var today = todayIso();
+
+      var daysInMonth = new Date(state.viewYear, state.viewMonth + 1, 0).getDate();
+      var cells = [];
+      for (var d = 1; d <= daysInMonth; d++) {
+        var dateStr = state.viewYear + "-" + String(state.viewMonth + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+        var isAvailable = state.availableDates.indexOf(dateStr) !== -1;
+        var isPast = dateStr < today;
+        var isSelected = state.selectedDate === dateStr;
+        var cls = "slot-btn";
+        if (!isAvailable || isPast) cls += " full";
+        if (isSelected) cls += " selected";
+        cells.push(
+          '<button type="button" class="' + cls + '" data-date="' + dateStr + '"' +
+          (isAvailable && !isPast ? "" : ' disabled') + '>' +
+          d +
+          '<span class="slot-meta">' + (isAvailable ? "✓ Available" : "-") + '</span>' +
+          '</button>'
+        );
+      }
+      grid.innerHTML = cells.join("");
+
+      if (!state.availableDates.length) {
+        empty.style.display = "block";
+        grid.style.display = "none";
+      } else {
+        empty.style.display = "none";
+        grid.style.display = "";
+      }
+
+      grid.querySelectorAll(".slot-btn:not(.full)").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          grid.querySelectorAll(".slot-btn").forEach(function (b) { b.classList.remove("selected"); });
+          btn.classList.add("selected");
+          state.selectedDate = btn.getAttribute("data-date");
+          document.getElementById("step3Next").disabled = false;
+        });
+      });
+    }
+
+    document.getElementById("prevMonth").addEventListener("click", function () {
+      state.viewMonth--;
+      if (state.viewMonth < 0) { state.viewMonth = 11; state.viewYear--; }
+      state.selectedDate = null;
+      document.getElementById("step3Next").disabled = true;
+      loadCommodityDates();
+    });
+
+    document.getElementById("nextMonth").addEventListener("click", function () {
+      state.viewMonth++;
+      if (state.viewMonth > 11) { state.viewMonth = 0; state.viewYear++; }
+      state.selectedDate = null;
+      document.getElementById("step3Next").disabled = true;
+      loadCommodityDates();
+    });
+
+    document.getElementById("step3Back").addEventListener("click", function () { gotoStep(2); });
+    document.getElementById("step3Next").addEventListener("click", function () {
+      if (!state.selectedDate) { showError("Please select a date."); return; }
+      document.getElementById("selDateBadge").textContent = "📅 " + fmtDate(state.selectedDate);
+      document.getElementById("slotCentreLine").textContent =
+        state.selectedCentre.name + " · " + state.selectedCommodity.name + " · " + fmtDate(state.selectedDate);
+      loadSlots(state.selectedCentre.id, state.selectedDate);
+      gotoStep(4);
+    });
+
+    /* ---------- STEP 4: slots ---------- */
+    function loadSlots(centreId, date) {
+      var grid = document.getElementById("slotGrid");
+      var loading = document.getElementById("slotLoading");
+      grid.innerHTML = "";
+      loading.style.display = "block";
+      document.getElementById("step4Next").disabled = true;
+      window.api("/api/slots/availability?centreId=" + encodeURIComponent(centreId) + "&date=" + encodeURIComponent(date))
+        .then(function (res) {
+          loading.style.display = "none";
+          var slots = res.slots || [];
+          if (!slots.length) {
+            grid.innerHTML = '<div class="empty-state"><div class="e-icon">🕐</div><h3>' + window.t("booking.noSlots") + '</h3></div>';
+            return;
+          }
+          grid.innerHTML = slots.map(function (s) {
+            return (
+              '<button type="button" class="slot-btn' + (s.available ? "" : " full") + '" data-slot="' + esc(s.timeSlot) + '"' +
+              (s.available ? "" : ' disabled title="Slot full"') + '>' +
+              esc(s.timeSlot) +
+              '<span class="slot-meta">' + s.booked + "/" + s.capacity + " " + window.t("misc.booked") + "</span>" +
+              "</button>"
+            );
+          }).join("");
+          grid.querySelectorAll(".slot-btn:not(.full)").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              grid.querySelectorAll(".slot-btn").forEach(function (b) { b.classList.remove("selected"); });
+              btn.classList.add("selected");
+              state.selectedSlot = btn.getAttribute("data-slot");
+              document.getElementById("step4Next").disabled = false;
+            });
+          });
+        })
+        .catch(function (e) {
+          loading.style.display = "none";
+          grid.innerHTML = '<div class="empty-state"><div class="e-icon">⚠️</div><h3>Could not load slots</h3>' +
+            '<button class="btn btn-outline mt-2" onclick="loadSlots(\'' + esc(centreId) + '\',\'' + esc(date) + '\')">' + window.t("common.retry") + '</button></div>';
+          showToast(e.message, "error");
+        });
+    }
+
+    document.getElementById("step4Back").addEventListener("click", function () { gotoStep(3); });
+    document.getElementById("step4Next").addEventListener("click", function () {
+      if (!state.selectedSlot) { showError("Please choose a time slot."); return; }
+      updateReview();
+      gotoStep(5);
+    });
+
+    /* ---------- STEP 5: review + submit ---------- */
+    function updateReview() {
+      document.getElementById("revCentre").textContent = state.selectedCentre ? state.selectedCentre.name : "-";
+      document.getElementById("revCommodity").textContent = state.selectedCommodity ? state.selectedCommodity.name : "-";
+      document.getElementById("revDate").textContent = state.selectedDate ? fmtDate(state.selectedDate) : "-";
+      document.getElementById("revSlot").textContent = state.selectedSlot || "-";
+      var qty = Number(document.getElementById("quantity").value) || 0;
+      document.getElementById("revQty").textContent = qty ? qty + " qu" : "-";
+      document.getElementById("revGrade").textContent = document.getElementById("grade").value;
+      document.getElementById("revMsp").textContent = state.selectedCommodity ? fmtMoney(state.selectedCommodity.msp) + "/qu" : "-";
+      var est = state.selectedCommodity ? qty * state.selectedCommodity.msp : 0;
+      document.getElementById("revEst").textContent = est ? fmtMoney(est) : "-";
+    }
+
+    ["quantity", "grade"].forEach(function (id) {
+      document.getElementById(id).addEventListener("change", updateReview);
+      document.getElementById(id).addEventListener("input", updateReview);
+    });
+
+    document.getElementById("step5Back").addEventListener("click", function () { gotoStep(4); });
+
+    document.getElementById("submitBooking").addEventListener("click", function () {
+      var qty = Number(document.getElementById("quantity").value);
+      if (!state.selectedCentre || !state.selectedCommodity || !state.selectedDate || !state.selectedSlot) {
+        showError("Please complete all booking steps.");
+        return;
+      }
+      if (!qty || qty <= 0) { showError("Enter a valid quantity."); return; }
+
+      var payload = {
+        centreId: state.selectedCentre.id,
+        commodityId: state.selectedCommodity.id,
+        date: state.selectedDate,
+        timeSlot: state.selectedSlot,
+        quantity: qty,
+        grade: document.getElementById("grade").value,
+      };
+
+      var btn = document.getElementById("submitBooking");
+      var btnText = document.getElementById("submitText");
+      var spinner = document.getElementById("submitSpinner");
+      btn.disabled = true;
+      btnText.textContent = "Confirming…";
+      spinner.style.display = "inline-block";
+
+      window.api("/api/bookings", { method: "POST", body: payload })
+        .then(function (res) {
+          if (res.success && res.booking) {
+            renderSuccess(res.booking);
+          } else {
+            throw new Error("Unexpected response from server");
+          }
+        })
+        .catch(function (err) {
+          btn.disabled = false;
+          btnText.textContent = "Confirm booking";
+          spinner.style.display = "none";
+          showError(err.message);
+          window.showError(err);
+        });
+    });
+
+    function renderSuccess(booking) {
+      document.getElementById("successMsg").textContent =
+        "Booking " + booking.id + " confirmed for " + booking.commodityName +
+        " at " + booking.centreName + " on " + fmtDate(booking.date) + " (" + booking.timeSlot + ").";
+      document.getElementById("successRef").textContent = "Reference: " + booking.id;
+
+      var qrImg = document.getElementById("successQr");
+      qrImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+      window.api("/api/bookings/" + encodeURIComponent(booking.id) + "/qr")
+        .then(function (res) {
+          if (res && res.qr) qrImg.src = res.qr;
+          document.getElementById("successQrBox").style.display = "inline-flex";
+        })
+        .catch(function () {
+          document.getElementById("successQrBox").style.display = "none";
+        });
+
+      document.querySelectorAll(".step").forEach(function (s) {
+        s.classList.remove("is-active");
+        s.classList.add("is-done");
+      });
+      document.querySelectorAll(".step-panel").forEach(function (p) { p.classList.remove("active"); });
+      document.querySelector('.step-panel[data-panel="6"]').classList.add("active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  </script>
+</body>
+</html>

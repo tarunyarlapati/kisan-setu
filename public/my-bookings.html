@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Bookings — Kisan Setu</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav id="appNav" class="navbar" aria-label="Main navigation"></nav>
+
+  <main>
+    <div class="container" style="max-width: 980px; padding: 36px 18px 0;">
+      <div class="page-header mb-3">
+        <div class="flex-between">
+          <div>
+            <h1 class="page-title" data-i18n="mybookings.title">My Bookings</h1>
+            <p class="muted" data-i18n="mybookings.sub">Track your procurement slots, shipments and payments.</p>
+          </div>
+          <div class="flex gap-2" style="flex-wrap:wrap;">
+            <a class="btn btn-outline" href="/kyc" id="kycLink">📋 KYC Verification</a>
+            <a class="btn btn-primary" href="/booking" data-i18n="mybookings.newBooking">+ New booking</a>
+          </div>
+        </div>
+      </div>
+
+      <div id="kycBanner" class="alert mb-3" style="display:none;"></div>
+
+      <div id="contentErr" class="alert alert-error mt-3 mb-3" style="display:none;"></div>
+      <div id="bookingList"></div>
+
+      <!-- Grievance support -->
+      <h2 class="mt-5 mb-2" data-i18n="mybookings.complaintHeading">Need help? Raise a complaint</h2>
+      <div class="card card-pad mb-2">
+        <form id="grievanceForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="gSubject" data-i18n="mybookings.subject">Subject *</label>
+              <input class="input" type="text" id="gSubject" maxlength="120" placeholder="Brief title of your complaint" data-i18n-placeholder="mybookings.subjectPlaceholder">
+            </div>
+            <div class="form-group">
+              <label for="gStatus" data-i18n="mybookings.recentTickets">Recent tickets</label>
+              <div id="grievanceSummary" class="small muted">Loading…</div>
+            </div>
+            <div class="form-group full">
+              <label for="gMessage" data-i18n="mybookings.message">Message *</label>
+              <textarea class="textarea" id="gMessage" maxlength="1000" placeholder="Describe your issue in detail" data-i18n-placeholder="mybookings.messagePlaceholder"></textarea>
+            </div>
+          </div>
+          <div class="flex-between mt-2">
+            <span></span>
+            <button type="submit" class="btn btn-primary" id="grievanceBtn">
+              <span id="grievanceBtnText" data-i18n="mybookings.submit">Submit complaint</span>
+              <span id="grievanceSpinner" class="spinner" style="width:18px;height:18px;border-width:2px;display:none;"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/i18n.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/chatbot.js" defer></script>
+  <script>
+    window.initApp({ active: "my-bookings", requireRole: "farmer", loginRedirect: "/login" })
+      .then(function () {
+        loadBookings();
+        loadGrievances();
+        loadKycBanner();
+      });
+
+    function loadKycBanner() {
+      window.api("/api/kyc/status").then(function (data) {
+        var banner = document.getElementById("kycBanner");
+        var link = document.getElementById("kycLink");
+        if (data.kyc === "pending" && data.hasDoc) {
+          banner.className = "alert alert-warn mb-3";
+          banner.innerHTML = '<strong>⏳ KYC Pending</strong> — Your document is under review.';
+          banner.style.display = "block";
+          link.textContent = "📋 View KYC";
+        } else if (data.kyc === "rejected") {
+          banner.className = "alert alert-error mb-3";
+          banner.innerHTML = '<strong>❌ KYC Rejected</strong> — ' + (data.notes || "Please resubmit your document.") + ' <a href="/kyc">Resubmit →</a>';
+          banner.style.display = "block";
+          link.textContent = "📋 Resubmit KYC";
+          link.className = "btn btn-danger";
+        } else if (data.kyc !== "verified") {
+          banner.className = "alert alert-info mb-3";
+          banner.innerHTML = '<strong>📋 KYC Required</strong> — Complete your identity verification to access all features. <a href="/kyc">Verify now →</a>';
+          banner.style.display = "block";
+        }
+      }).catch(function () {});
+    }
+
+    function loadBookings() {
+      const list = document.getElementById("bookingList");
+      list.innerHTML = window.skeletonCards(2);
+      window.api("/api/bookings/my")
+        .then(function (bookings) {
+          return window.api("/api/payments/my").then(function (payments) {
+            return { bookings: bookings, payments: payments };
+          });
+        })
+        .then(function (data) {
+          renderBookings(data.bookings, data.payments);
+        })
+        .catch(function (e) {
+          document.getElementById("contentErr").textContent = e.message;
+          document.getElementById("contentErr").style.display = "block";
+          list.innerHTML = '<div class="empty-state"><div class="e-icon">⚠️</div><h3>Could not load bookings</h3>' +
+            '<button class="btn btn-outline mt-2" onclick="loadBookings()">' + window.t("common.retry") + '</button></div>';;
+        });
+    }
+
+    function renderBookings(bookings, payments) {
+      const list = document.getElementById("bookingList");
+      if (!bookings.length) {
+        list.innerHTML = '<div class="empty-state"><div class="e-icon">📅</div><h3>No bookings yet</h3>' +
+          '<p>Book your first procurement slot to sell your produce at MSP.</p>' +
+          '<a class="btn btn-primary mt-2" href="/booking">Book a slot →</a></div>';
+        return;
+      }
+      list.innerHTML = bookings.map(function (b) {
+        const pay = payments.find(function (p) { return p.bookingId === b.id; });
+        const queueLine = b.queueIndex != null
+          ? '<span class="chip">🎟 Position <strong>#' + b.queueIndex + "</strong>" +
+            (b.estWaitMin != null ? " · ~" + b.estWaitMin + " min" : "") + "</span>"
+          : "";
+        return (
+          '<article class="card booking-card mb-3">' +
+          '<div class="bc-head">' +
+          '<div><span class="bc-ref">#' + esc(b.id) + "</span>" +
+          '<span class="small muted"> · ' + esc(b.centreName) + "</span></div>" +
+          window.statusBadge(b.status) +
+          "</div>" +
+          '<div class="bc-body">' +
+          '<div class="bc-facts">' +
+          '<div class="bc-fact"><div class="f-label">' + window.t("mybookings.commodity") + '</div><div class="f-value">' + esc(b.commodityName) + "</div></div>" +
+          '<div class="bc-fact"><div class="f-label">' + window.t("mybookings.dateTime") + '</div><div class="f-value">' + fmtDate(b.date) + " · " + esc(b.timeSlot) + "</div></div>" +
+          '<div class="bc-fact"><div class="f-label">' + window.t("common.quantity") + '</div><div class="f-value">' + Number(b.quantity) + " qu</div></div>" +
+          '<div class="bc-fact"><div class="f-label">' + window.t("mybookings.grade") + '</div><div class="f-value">' + esc(b.grade || "-") + "</div></div>" +
+          '<div class="bc-fact"><div class="f-label">' + window.t("mybookings.estValue") + '</div><div class="f-value">' + fmtMoney(b.estAmount) + "</div></div>" +
+          "</div>" +
+          (queueLine ? '<div class="flex gap-2 mt-1">' + queueLine + "</div>" : "") +
+          shipmentHtml(b) +
+          paymentHtml(b, pay) +
+          "</div>" +
+          "</article>"
+        );
+      }).join("");
+    }
+
+    function shipmentHtml(b) {
+      if (!b.shipment) return "";
+      const s = b.shipment;
+      const total = Math.max(1, s.totalStages);
+      const stage = Math.min(s.stage, total);
+      const pct = Math.round((stage / total) * 100);
+      let milestones = ["Prepared at farm", "Reached procurement centre", "Reached town hub", "At regional warehouse", "In transit", "Delivered at FCI depot"];
+      if (s.route && s.route.length) {
+        milestones = s.route.map(function (r) { return r.name; });
+      }
+      const events = s.events || [];
+      const getTime = function (i) {
+        const ev = events.find(function (e) { return e.stage === i; });
+        return ev ? ev.at : null;
+      };
+      return (
+        '<div class="mt-3">' +
+        '<div class="flex-between mb-1"><span class="small" style="font-weight:700;">' + window.t("mybookings.shipmentTracking") + '</span>' +
+        '<span class="small muted">' + stage + "/" + total + "</span></div>" +
+        '<div class="progress-track"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
+        '<ul class="ship-tracker mt-2">' +
+        milestones.map(function (name, i) {
+          const cls = i < stage ? "done" : i === stage ? "current" : "";
+          const time = i === stage ? timeAgo(getTime(i)) : "";
+          return '<li class="' + cls + '">' + esc(name) + (time ? '<div class="st-time">' + time + "</div>" : "") + "</li>";
+        }).join("") +
+        "</ul>" +
+        "</div>"
+      );
+    }
+
+    function paymentHtml(b, pay) {
+      if (!pay) return "";
+      const status = pay.status || "-";
+      const value = fmtMoney(pay.amount) + " · " + esc(status);
+      return (
+        '<div class="mt-3" style="border-top:1px solid var(--border-soft); padding-top:14px;">' +
+        '<div class="flex-between mb-1">' +
+        '<span class="small" style="font-weight:700;">' + window.t("mybookings.payment") + " " + window.statusBadge(status) + "</span>" +
+        "</div>" +
+        '<div class="bc-facts">' +
+        '<div class="bc-fact"><div class="f-label">' + window.t("mybookings.amount") + '</div><div class="f-value">' + fmtMoney(pay.amount) + "</div></div>" +
+        '<div class="bc-fact"><div class="f-label">' + window.t("common.mode") + '</div><div class="f-value">' + esc(pay.paymentMode || "-") + "</div></div>" +
+        '<div class="bc-fact"><div class="f-label">' + window.t("common.ref") + '</div><div class="f-value mono">' + esc(pay.transactionRef || "-") + "</div></div>" +
+        "</div>" +
+        '<div class="table-actions mt-2">' +
+        '<button class="btn btn-sm btn-outline" data-upi-qr="' + esc(pay.id) + '">' + window.t("mybookings.upiQr") + '</button>' +
+        '<a class="btn btn-sm btn-outline" href="/api/payments/' + encodeURIComponent(pay.id) + '/receipt.pdf" target="_blank" rel="noopener">' + window.t("mybookings.receiptPdf") + '</a>' +
+        "</div>" +
+        "</div>"
+      );
+    }
+
+    document.getElementById("bookingList").addEventListener("click", function (e) {
+      const btn = e.target.closest("[data-upi-qr]");
+      if (!btn) return;
+      const id = btn.getAttribute("data-upi-qr");
+      btn.disabled = true;
+      btn.textContent = window.t("common.loading");
+      window.api("/api/payments/" + encodeURIComponent(id) + "/upi-qr")
+        .then(function (res) {
+          showUpiQr(res);
+          btn.disabled = false;
+          btn.textContent = window.t("mybookings.upiQr");
+        })
+        .catch(function (err) {
+          btn.disabled = false;
+          btn.textContent = window.t("mybookings.upiQr");
+          window.showError(err, "Could not generate UPI QR");
+        });
+    });
+
+    function showUpiQr(res) {
+      window.openModal(
+        '<div class="modal-head"><h3>UPI Payment Details</h3><button class="modal-close" data-close="1">&times;</button></div>' +
+        '<div class="modal-body flex-center flex-column">' +
+        '<div class="qr-box"><img src="' + res.qr + '" alt="UPI QR code"></div>' +
+        '<p class="small muted mt-2">UPI ID: <strong>' + esc(res.upiId) + "</strong></p>" +
+        '<p class="small muted">Amount: <strong>' + fmtMoney(res.amount) + "</strong></p>" +
+        "</div>" +
+        '<div class="modal-foot"><button class="btn btn-primary" data-close="1">Close</button></div>'
+      );
+    }
+
+    /* ---------- Grievances ---------- */
+    function loadGrievances() {
+      window.api("/api/grievances/my").then(function (list) {
+        const box = document.getElementById("grievanceSummary");
+        if (!list.length) {
+          box.textContent = window.t("mybookings.noComplaints");
+          return;
+        }
+        box.innerHTML = list.slice(0, 4).map(function (g) {
+          return '<div class="flex-between" style="gap:10px;">' +
+            '<span class="grow muted" title="' + esc(g.subject) + '">' + esc(g.subject) + "</span>" +
+            window.statusBadge(g.status) +
+            "</div>";
+        }).join("");
+      }).catch(function () {
+        document.getElementById("grievanceSummary").textContent = window.t("mybookings.couldNotLoadTickets");
+      });
+    }
+
+    document.getElementById("grievanceForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const subject = document.getElementById("gSubject").value.trim();
+      const message = document.getElementById("gMessage").value.trim();
+      if (!subject || !message) {
+        window.showToast("Please provide a subject and message.", "error");
+        return;
+      }
+      const btn = document.getElementById("grievanceBtn");
+      const btnText = document.getElementById("grievanceBtnText");
+      const spinner = document.getElementById("grievanceSpinner");
+      btn.disabled = true;
+      btnText.textContent = window.t("mybookings.submitting");
+      spinner.style.display = "inline-block";
+
+      window.api("/api/grievances", { method: "POST", body: { subject: subject, message: message } })
+        .then(function (res) {
+          btn.disabled = false;
+          btnText.textContent = window.t("mybookings.submit");
+          spinner.style.display = "none";
+          document.getElementById("gSubject").value = "";
+          document.getElementById("gMessage").value = "";
+          window.showToast("Complaint registered. Ticket #" + (res.grievance ? res.grievance.id : "") + " created.");
+          loadGrievances();
+        })
+        .catch(function (err) {
+          btn.disabled = false;
+          btnText.textContent = window.t("mybookings.submit");
+          spinner.style.display = "none";
+          window.showError(err);
+        });
+    });
+  </script>
+</body>
+</html>
